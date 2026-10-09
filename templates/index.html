@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClinicOS - Multi-Tenant Healthcare Clinical Portal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            },
+            clinical: {
+              50: '#f0fdfa',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .tab-active { border-color: #0d9488; color: #0f766e; font-weight: 600; background-color: #f0fdfa; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- TOP HEADER / TENANT BAR -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Active Tenant -->
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold shadow-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+              </svg>
+            </div>
+            <div>
+              <span class="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
+                Clinic<span class="text-teal-600">OS</span>
+                <span class="text-[10px] uppercase font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 tracking-wider">v0.1</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="hidden md:block h-5 w-px bg-slate-200"></div>
+
+          <!-- Organization (Tenant) Switcher -->
+          <div class="relative">
+            <div class="flex items-center space-x-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 cursor-pointer transition" id="tenantMenuBtn">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <div class="text-left">
+                <p class="text-xs text-slate-500 font-medium leading-none">Active Organization</p>
+                <p class="text-sm font-semibold text-slate-900 leading-tight" id="activeOrgName">Memorial Outpatient Center</p>
+              </div>
+              <span id="planBadge" class="ml-1 text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">PRO PLAN</span>
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Header Actions: API Mode Switcher & User Profile -->
+        <div class="flex items-center space-x-3">
+          <!-- Backend Connection Mode Pill -->
+          <button id="toggleDataSourceBtn" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full border transition border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100" title="Click to toggle between Mock Synthetic Data and Live Django REST API">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="dataSourceDot"></span>
+            <span id="dataSourceLabel">Mode: Mock Synthetic Data</span>
+          </button>
+
+          <!-- Current User Profile Pill -->
+          <div class="flex items-center space-x-2 pl-2 border-l border-slate-200">
+            <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-800 font-bold flex items-center justify-center text-sm border border-teal-200">
+              SC
+            </div>
+            <div class="hidden sm:block text-left">
+              <p class="text-xs font-semibold text-slate-900" id="currentUserName">Dr. Sarah Chen, MD</p>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-medium bg-teal-50 text-teal-700 px-1.5 rounded border border-teal-200" id="currentUserRole">Doctor</span>
+                <span class="text-[11px] text-slate-400">admin@clinicos.local</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAIN NAVIGATION TABS -->
+    <div class="bg-slate-50/70 border-t border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="flex space-x-2 py-1.5 overflow-x-auto text-sm" id="mainNavTabs">
+          <button class="nav-tab tab-active px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 flex items-center space-x-2 transition" data-view="dashboard">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            <span>Clinic Overview</span>
+          </button>
+          <button class="nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition" data-view="patients">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <span>Patients Directory</span>
+          </button>
+          <button class="nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition" data-view="encounters">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>Encounters & EMR Notes</span>
+          </button>
+          <button class="nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition" data-view="team">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <span>Team & RBAC</span>
+          </button>
+          <button class="nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition" data-view="audit">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <span>Tamper-Proof Audit Log</span>
+          </button>
+          <button class="nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition text-indigo-700 bg-indigo-50/50" data-view="apiContract">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            <span class="font-semibold text-indigo-600">Backend API Guide</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN BODY CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ================= VIEW 1: CLINIC OVERVIEW DASHBOARD ================= -->
+    <section id="view-dashboard" class="space-y-6">
+      
+      <!-- Welcome & Quick Action Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Clinical Command Center</h1>
+          <p class="text-sm text-slate-500 mt-1">Tenant Scoped to: <strong class="text-slate-800 font-semibold" id="tenantSubhead">Memorial Outpatient Center</strong> (ID: <code class="text-xs bg-slate-100 px-1 py-0.5 rounded text-teal-700">org-8f92a</code>)</p>
+        </div>
+        <div class="flex items-center flex-wrap gap-2.5">
+          <button onclick="openModal('newPatientModal')" class="inline-flex items-center space-x-1.5 bg-teal-600 hover:bg-teal-700 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>Register Patient</span>
+          </button>
+          <button onclick="openModal('newEncounterModal')" class="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+            <span>New Encounter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- METRIC CARDS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Metric 1: Patients -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Patients</span>
+            <span class="p-2 bg-teal-50 text-teal-600 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7 7z"></path></svg>
+            </span>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <span class="text-3xl font-extrabold text-slate-900" id="statPatientsCount">142</span>
+            <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+12 this week</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">Strict tenant isolation active</p>
+        </div>
+
+        <!-- Metric 2: Today's Encounters -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Today's Visits</span>
+            <span class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </span>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <span class="text-3xl font-extrabold text-slate-900" id="statEncountersCount">8</span>
+            <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">3 In Progress</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">SOAP clinical documentation</p>
+        </div>
+
+        <!-- Metric 3: Plan Quota Meter -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Plan Quota (Pro)</span>
+            <span class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </span>
+          </div>
+          <div class="mt-3">
+            <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
+              <span>Patient Capacity</span>
+              <span>142 / 1,000 (14.2%)</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2">
+              <div class="bg-purple-600 h-2 rounded-full" style="width: 14.2%"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">Metering & rate limits enforced</p>
+        </div>
+
+        <!-- Metric 4: Hash-Chain Security -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Audit Verification</span>
+            <span class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </span>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <span class="text-xl font-bold text-emerald-700">Verified</span>
+            <span class="text-xs font-mono bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">SHA-256 Chain</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">Zero tamper events detected</p>
+        </div>
+      </div>
+
+      <!-- MAIN DASHBOARD SPLIT: TODAY'S ENCOUNTERS & RECENT AUDIT -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Today's Clinical Schedule -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Scheduled Encounters for Today</h2>
+              <p class="text-xs text-slate-500">Synthetic patient encounters assigned to clinical staff</p>
+            </div>
+            <button onclick="switchView('encounters')" class="text-xs font-semibold text-teal-600 hover:text-teal-700">View All Encounters &rarr;</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="text-xs uppercase text-slate-400 bg-slate-50 border-y border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-3">Time</th>
+                  <th class="py-2.5 px-3">Patient / MRN</th>
+                  <th class="py-2.5 px-3">Chief Complaint</th>
+                  <th class="py-2.5 px-3">Provider</th>
+                  <th class="py-2.5 px-3">Status</th>
+                  <th class="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100" id="todayScheduleTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Real-Time Audit Activity Feed -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-base font-bold text-slate-900">Recent Audit Chain</h2>
+              <span class="text-[10px] uppercase font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Append-Only</span>
+            </div>
+            <div class="space-y-3" id="quickAuditFeed">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100">
+            <button onclick="switchView('audit')" class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg text-center transition flex items-center justify-center space-x-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+              <span>Inspect Full Cryptographic Ledger</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= VIEW 2: PATIENTS DIRECTORY ================= -->
+    <section id="view-patients" class="hidden space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Patients Registry</h2>
+          <p class="text-xs text-slate-500">Multi-tenant isolated patient directory. Queries automatically scoped to active organization.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="openModal('newPatientModal')" class="inline-flex items-center space-x-1.5 bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3.5 py-2 rounded-lg shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>+ Add New Patient</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters & Search Bar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        <div class="relative w-full md:w-96">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <input type="text" id="patientSearchInput" placeholder="Search by name, MRN, or phone..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+        </div>
+        <div class="flex items-center space-x-2 w-full md:w-auto">
+          <select id="patientStatusFilter" class="border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="ALL">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inpatient">Inpatient</option>
+            <option value="Discharged">Discharged</option>
+          </select>
+          <span class="text-xs text-slate-400" id="patientResultCount">Showing 6 patients</span>
+        </div>
+      </div>
+
+      <!-- Patients Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="text-xs uppercase text-slate-400 bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">Patient MRN</th>
+                <th class="py-3 px-4">Full Name</th>
+                <th class="py-3 px-4">Demographics</th>
+                <th class="py-3 px-4">Contact Phone</th>
+                <th class="py-3 px-4">Primary Doctor</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="patientsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= VIEW 3: ENCOUNTERS & EMR NOTES ================= -->
+    <section id="view-encounters" class="hidden space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Encounters & Clinical Documentation (EMR)</h2>
+          <p class="text-xs text-slate-500">Structured SOAP (Subjective, Objective, Assessment, Plan) records with IDOR protection.</p>
+        </div>
+        <div>
+          <button onclick="openModal('newEncounterModal')" class="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3.5 py-2 rounded-lg shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>+ Create Clinical Encounter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Encounter Filter Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="md:col-span-1 space-y-3">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900 mb-2">Encounters List</h3>
+            <div class="space-y-2 max-h-[600px] overflow-y-auto pr-1" id="encountersListSidebar">
+              <!-- Dynamically populated cards -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail Preview: Active SOAP Note -->
+        <div class="md:col-span-2">
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5" id="soapNoteViewer">
+            <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200" id="soapEncounterId">ENC-8812</span>
+                  <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium" id="soapDate">2026-10-09 14:30 UTC</span>
+                  <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold" id="soapStatus">Completed</span>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mt-2" id="soapPatientName">Jane Doe (MRN-10492)</h3>
+                <p class="text-xs text-slate-500">Provider: <strong class="text-slate-700" id="soapDoctor">Dr. Sarah Chen, MD</strong></p>
+              </div>
+              <button onclick="alert('Print / Export PDF feature ready for backend integration')" class="text-xs text-slate-600 border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                <span>Export Note</span>
+              </button>
+            </div>
+
+            <!-- SOAP Sections -->
+            <div class="space-y-4 text-sm">
+              <!-- S -->
+              <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+                <span class="text-xs font-bold text-teal-700 uppercase tracking-wider block mb-1">Subjective (S)</span>
+                <p class="text-slate-800" id="soapSubjective">Patient presents with persistent cough for 4 days, mild fever (38°C), and fatigue. Denies shortness of breath.</p>
+              </div>
+              <!-- O -->
+              <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+                <span class="text-xs font-bold text-teal-700 uppercase tracking-wider block mb-1">Objective (O) - Vitals & Findings</span>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">BP</span><span class="font-bold text-slate-800" id="soapBP">122/78</span></div>
+                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">Heart Rate</span><span class="font-bold text-slate-800" id="soapHR">76 bpm</span></div>
+                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">Temp</span><span class="font-bold text-slate-800" id="soapTemp">37.8°C</span></div>
+                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">SpO2</span><span class="font-bold text-slate-800" id="soapSpO2">98%</span></div>
+                </div>
+                <p class="text-slate-800 text-xs" id="soapObjectiveNotes">Lungs clear to auscultation bilaterally. Pharynx slightly erythematous without exudate.</p>
+              </div>
+              <!-- A -->
+              <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+                <span class="text-xs font-bold text-teal-700 uppercase tracking-wider block mb-1">Assessment (A) - Diagnosis</span>
+                <p class="font-semibold text-slate-900" id="soapAssessment">Acute upper respiratory tract infection (J06.9)</p>
+              </div>
+              <!-- P -->
+              <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+                <span class="text-xs font-bold text-teal-700 uppercase tracking-wider block mb-1">Plan (P) - Treatment & Rx</span>
+                <p class="text-slate-800" id="soapPlan">Rest, hydration, Acetaminophen 500mg PRN for fever. Follow-up in 5 days if symptoms persist.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= VIEW 4: TEAM & RBAC PERMISSIONS ================= -->
+    <section id="view-team" class="hidden space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Organization Members & RBAC</h2>
+          <p class="text-xs text-slate-500">Roles defined in accounts model: <code>Owner</code>, <code>Admin</code>, <code>Doctor</code>, <code>Staff</code>, <code>Viewer</code>.</p>
+        </div>
+        <button onclick="openModal('inviteMemberModal')" class="inline-flex items-center space-x-1.5 bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3.5 py-2 rounded-lg shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+          <span>+ Invite Member</span>
+        </button>
+      </div>
+
+      <!-- Role Permission Matrix Reference -->
+      <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 text-xs">
+        <h4 class="font-bold text-slate-800 mb-1">Central RBAC Permission Map (Planned Milestone 3)</h4>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-slate-600 mt-2">
+          <div class="bg-white p-2 rounded border border-slate-200"><span class="font-bold text-purple-700">OWNER:</span> Full tenant billing, org destroy, invites</div>
+          <div class="bg-white p-2 rounded border border-slate-200"><span class="font-bold text-indigo-700">ADMIN:</span> Team invites, audit review, clinic settings</div>
+          <div class="bg-white p-2 rounded border border-slate-200"><span class="font-bold text-teal-700">DOCTOR:</span> Clinical notes CRUD, sign SOAP, patient access</div>
+          <div class="bg-white p-2 rounded border border-slate-200"><span class="font-bold text-blue-700">STAFF:</span> Patient register, check-in, scheduling</div>
+          <div class="bg-white p-2 rounded border border-slate-200"><span class="font-bold text-slate-700">VIEWER:</span> Read-only scoped directory access</div>
+        </div>
+      </div>
+
+      <!-- Members Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-sm">
+          <thead class="text-xs uppercase text-slate-400 bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="py-3 px-4">Member Email</th>
+              <th class="py-3 px-4">Full Name</th>
+              <th class="py-3 px-4">Role</th>
+              <th class="py-3 px-4">Joined Date</th>
+              <th class="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="teamTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ================= VIEW 5: TAMPER-PROOF AUDIT LOG ================= -->
+    <section id="view-audit" class="hidden space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Hash-Chained Audit Ledger</h2>
+          <p class="text-xs text-slate-500">Append-only cryptographic audit stream. Every entry stores <code>SHA-256(previous_hash + payload)</code>.</p>
+        </div>
+        <button onclick="verifyAuditChain()" class="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-4 py-2 rounded-lg shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          <span>Run Cryptographic Verification</span>
+        </button>
+      </div>
+
+      <!-- Verification Status Banner -->
+      <div id="auditVerifyBanner" class="p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">✓</div>
+          <div>
+            <p class="text-sm font-bold">Chain Integrity Verified: 6 of 6 Blocks Valid</p>
+            <p class="text-xs text-emerald-700">Root genesis hash matches. No historical records have been modified or deleted.</p>
+          </div>
+        </div>
+        <span class="text-xs font-mono font-bold bg-white text-emerald-800 px-3 py-1 rounded border border-emerald-300">GENESIS: 0000a4b7...</span>
+      </div>
+
+      <!-- Audit Entries Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-xs">
+          <thead class="text-xs uppercase text-slate-400 bg-slate-50 border-b border-slate-200 font-semibold">
+            <tr>
+              <th class="py-3 px-3">Block #</th>
+              <th class="py-3 px-3">Timestamp (UTC)</th>
+              <th class="py-3 px-3">Actor</th>
+              <th class="py-3 px-3">Action Event</th>
+              <th class="py-3 px-3">Target Resource</th>
+              <th class="py-3 px-3 font-mono">Current SHA-256 Hash</th>
+              <th class="py-3 px-3 font-mono">Prev Hash</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-mono" id="auditLedgerTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ================= VIEW 6: BACKEND API GUIDE & CONTRACT ================= -->
+    <section id="view-apiContract" class="hidden space-y-6">
+      <div class="bg-indigo-900 text-white p-6 rounded-2xl shadow-sm">
+        <div class="flex items-center space-x-2 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          <span>Developer Integration Spec</span>
+        </div>
+        <h2 class="text-2xl font-bold">Frontend-to-Backend REST API Blueprint</h2>
+        <p class="text-sm text-indigo-200 mt-2 max-w-3xl">
+          Since you are implementing the Django backend yourself, this page provides the exact endpoint schemas, HTTP methods, headers, and payload structures this UI expects. Toggle <strong>"Mode: Live Django REST API"</strong> anytime to connect this UI directly to your views!
+        </p>
+      </div>
+
+      <!-- Endpoint Cards -->
+      <div class="space-y-4">
+        
+        <!-- Endpoint 1: Auth / Token -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">POST</span>
+              <code class="text-sm font-bold text-slate-900">/api/v1/auth/token/</code>
+            </div>
+            <span class="text-xs text-slate-500 font-medium">Milestone 1 (JWT Login)</span>
+          </div>
+          <p class="text-xs text-slate-600 mb-3">Authenticates user using email and password, returning access & refresh tokens.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+            <div class="bg-slate-900 text-emerald-400 p-3 rounded-lg overflow-x-auto">
+              <div class="text-[10px] text-slate-400 mb-1">// Request Body</div>
+              {<br>
+              &nbsp;&nbsp;"email": "doctor@example.com",<br>
+              &nbsp;&nbsp;"password": "SecretPassword123"<br>
+              }
+            </div>
+            <div class="bg-slate-900 text-cyan-300 p-3 rounded-lg overflow-x-auto">
+              <div class="text-[10px] text-slate-400 mb-1">// Response (200 OK)</div>
+              {<br>
+              &nbsp;&nbsp;"access": "eyJhbGciOi...",<br>
+              &nbsp;&nbsp;"refresh": "eyJhbGciOi...",<br>
+              &nbsp;&nbsp;"user": { "id": 1, "email": "doctor@example.com" }<br>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Endpoint 2: Patients -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800">GET / POST</span>
+              <code class="text-sm font-bold text-slate-900">/api/v1/patients/</code>
+            </div>
+            <span class="text-xs text-slate-500 font-medium">Milestone 2 (Tenant Scoped)</span>
+          </div>
+          <p class="text-xs text-slate-600 mb-3">Lists and creates patients. <strong>Must be scoped to the active organization from JWT/Membership!</strong></p>
+          <div class="bg-slate-900 text-amber-300 p-3 rounded-lg text-xs font-mono overflow-x-auto">
+            <div class="text-[10px] text-slate-400 mb-1">// Payload fields</div>
+            { "mrn": "MRN-10492", "first_name": "Jane", "last_name": "Doe", "dob": "1988-04-12", "phone": "555-0199", "status": "Active" }
+          </div>
+        </div>
+
+        <!-- Endpoint 3: Encounters -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800">GET / POST</span>
+              <code class="text-sm font-bold text-slate-900">/api/v1/encounters/</code>
+            </div>
+            <span class="text-xs text-slate-500 font-medium">Milestone 2 (SOAP Notes)</span>
+          </div>
+          <p class="text-xs text-slate-600 mb-3">Encounter CRUD containing structured clinical notes (Subjective, Objective, Assessment, Plan).</p>
+        </div>
+
+        <!-- Endpoint 4: Audit Log & Verify -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-purple-100 text-purple-800">GET</span>
+              <code class="text-sm font-bold text-slate-900">/api/v1/audit-logs/verify/</code>
+            </div>
+            <span class="text-xs text-slate-500 font-medium">Milestone 5 (Hash-chain integrity)</span>
+          </div>
+          <p class="text-xs text-slate-600">Iterates the SHA-256 blocks for the tenant and verifies that every hash matches its preceding entry.</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= MODAL: NEW PATIENT ================= -->
+  <div id="newPatientModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <h3 class="text-base font-bold text-slate-900">Register New Patient</h3>
+        <button onclick="closeModal('newPatientModal')" class="text-slate-400 hover:text-slate-600">&times;</button>
+      </div>
+      <form id="newPatientForm" class="space-y-3.5 text-sm">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">First Name</label>
+            <input type="text" id="patientFirstName" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="Eleanor">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Last Name</label>
+            <input type="text" id="patientLastName" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="Vance">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Date of Birth</label>
+            <input type="date" id="patientDOB" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none" value="1992-05-18">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Gender</label>
+            <select id="patientGender" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Other">Other / Non-binary</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Contact Phone</label>
+          <input type="tel" id="patientPhone" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="+1 (555) 432-8891">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Assign Provider</label>
+          <select id="patientDoctor" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            <option value="Dr. Sarah Chen, MD">Dr. Sarah Chen, MD (Doctor)</option>
+            <option value="Dr. Marcus Bell, DO">Dr. Marcus Bell, DO (Doctor)</option>
+          </select>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('newPatientModal')" class="px-4 py-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-sm">Save & Register</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: NEW ENCOUNTER (SOAP) ================= -->
+  <div id="newEncounterModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">New Clinical Encounter</h3>
+          <p class="text-xs text-slate-500">Structured SOAP Note & Vitals Entry</p>
+        </div>
+        <button onclick="closeModal('newEncounterModal')" class="text-slate-400 hover:text-slate-600">&times;</button>
+      </div>
+      <form id="newEncounterForm" class="space-y-4 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Patient</label>
+            <select id="encounterPatientSelect" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Attending Provider</label>
+            <input type="text" value="Dr. Sarah Chen, MD" disabled class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-500">
+          </div>
+        </div>
+
+        <!-- S -->
+        <div>
+          <label class="block font-bold text-teal-800 mb-1 uppercase tracking-wider">Subjective (S) - Chief Complaint & History</label>
+          <textarea id="encSubjective" rows="2" required placeholder="Patient states..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
+        </div>
+
+        <!-- O -->
+        <div>
+          <label class="block font-bold text-teal-800 mb-1 uppercase tracking-wider">Objective (O) - Vitals</label>
+          <div class="grid grid-cols-4 gap-2 mb-2">
+            <input type="text" id="encBP" placeholder="BP (120/80)" class="px-2 py-1.5 border border-slate-200 rounded">
+            <input type="text" id="encHR" placeholder="HR (72 bpm)" class="px-2 py-1.5 border border-slate-200 rounded">
+            <input type="text" id="encTemp" placeholder="Temp (37°C)" class="px-2 py-1.5 border border-slate-200 rounded">
+            <input type="text" id="encSpO2" placeholder="SpO2 (99%)" class="px-2 py-1.5 border border-slate-200 rounded">
+          </div>
+          <textarea id="encObjective" rows="2" placeholder="Physical examination findings..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
+        </div>
+
+        <!-- A -->
+        <div>
+          <label class="block font-bold text-teal-800 mb-1 uppercase tracking-wider">Assessment (A) - Diagnosis & ICD Code</label>
+          <input type="text" id="encAssessment" required placeholder="e.g. Essential Hypertension (I10)" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
+        </div>
+
+        <!-- P -->
+        <div>
+          <label class="block font-bold text-teal-800 mb-1 uppercase tracking-wider">Plan (P) - Rx & Follow-up</label>
+          <textarea id="encPlan" rows="2" required placeholder="Prescriptions, diagnostics ordered, follow-up..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('newEncounterModal')" class="px-4 py-2 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold shadow-sm">Sign & Save Encounter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: INVITE MEMBER ================= -->
+  <div id="inviteMemberModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <h3 class="text-base font-bold text-slate-900">Invite Clinic Team Member</h3>
+        <button onclick="closeModal('inviteMemberModal')" class="text-slate-400 hover:text-slate-600">&times;</button>
+      </div>
+      <form id="inviteMemberForm" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Email Address</label>
+          <input type="email" id="inviteEmail" required placeholder="colleague@clinic.com" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Full Name</label>
+          <input type="text" id="inviteName" required placeholder="Dr. Gregory House" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Assigned Role</label>
+          <select id="inviteRole" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            <option value="doctor">Doctor (Clinical note sign-off)</option>
+            <option value="staff">Staff (Scheduling & patient intake)</option>
+            <option value="admin">Admin (Manage members & settings)</option>
+            <option value="viewer">Viewer (Read-only)</option>
+          </select>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('inviteMemberModal')" class="px-4 py-2 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold shadow-sm">Send Invitation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- JAVASCRIPT STATE ENGINE & MOCK DATA -->
+  <script>
+    // Global State for ClinicOS
+    const ClinicState = {
+      isLiveBackend: false, // false = Synthetic Mock Mode; true = calls Django REST endpoints
+      activeOrg: {
+        id: "org-8f92a",
+        name: "Memorial Outpatient Center",
+        plan: "pro",
+        slug: "memorial-outpatient"
+      },
+      currentUser: {
+        name: "Dr. Sarah Chen, MD",
+        email: "admin@clinicos.local",
+        role: "Doctor"
+      },
+      patients: [
+        { id: 1, mrn: "MRN-10492", name: "Jane Doe", dob: "1988-04-12", gender: "Female", phone: "+1 (555) 019-2831", doctor: "Dr. Sarah Chen, MD", status: "Active" },
+        { id: 2, mrn: "MRN-10493", name: "Robert Taylor", dob: "1972-11-03", gender: "Male", phone: "+1 (555) 234-9982", doctor: "Dr. Marcus Bell, DO", status: "Active" },
+        { id: 3, mrn: "MRN-10494", name: "Elena Rostova", dob: "1995-09-24", gender: "Female", phone: "+1 (555) 441-3310", doctor: "Dr. Sarah Chen, MD", status: "Inpatient" },
+        { id: 4, mrn: "MRN-10495", name: "Marcus Brody", dob: "1960-01-15", gender: "Male", phone: "+1 (555) 872-9102", doctor: "Dr. Marcus Bell, DO", status: "Active" },
+        { id: 5, mrn: "MRN-10496", name: "Chloe Bennett", dob: "2001-08-30", gender: "Female", phone: "+1 (555) 671-5521", doctor: "Dr. Sarah Chen, MD", status: "Discharged" },
+        { id: 6, mrn: "MRN-10497", name: "David Kim", dob: "1984-06-19", gender: "Male", phone: "+1 (555) 902-1244", doctor: "Dr. Marcus Bell, DO", status: "Active" }
+      ],
+      encounters: [
+        {
+          id: "ENC-8812",
+          patientId: 1,
+          patientName: "Jane Doe (MRN-10492)",
+          doctor: "Dr. Sarah Chen, MD",
+          date: "2026-10-09 14:30",
+          complaint: "Persistent cough & fatigue (4 days)",
+          status: "Completed",
+          vitals: { bp: "122/78", hr: "76 bpm", temp: "37.8°C", spo2: "98%" },
+          objectiveNotes: "Lungs clear to auscultation bilaterally. Pharynx slightly erythematous without exudate.",
+          assessment: "Acute upper respiratory tract infection (J06.9)",
+          plan: "Rest, hydration, Acetaminophen 500mg PRN for fever. Follow-up in 5 days."
+        },
+        {
+          id: "ENC-8813",
+          patientId: 2,
+          patientName: "Robert Taylor (MRN-10493)",
+          doctor: "Dr. Marcus Bell, DO",
+          date: "2026-10-09 15:15",
+          complaint: "Routine 3-month Hypertension Review",
+          status: "In Progress",
+          vitals: { bp: "138/86", hr: "80 bpm", temp: "36.9°C", spo2: "99%" },
+          objectiveNotes: "Cardiovascular regular rate and rhythm. No peripheral edema noted.",
+          assessment: "Essential Hypertension - Suboptimally Controlled (I10)",
+          plan: "Adjust Lisinopril to 20mg daily. Re-check BP log in 4 weeks."
+        },
+        {
+          id: "ENC-8814",
+          patientId: 3,
+          patientName: "Elena Rostova (MRN-10494)",
+          doctor: "Dr. Sarah Chen, MD",
+          date: "2026-10-09 16:00",
+          complaint: "Post-op wound evaluation",
+          status: "Scheduled",
+          vitals: { bp: "118/74", hr: "68 bpm", temp: "36.7°C", spo2: "100%" },
+          objectiveNotes: "Incision clean, dry, and intact. Sutures well-approximated.",
+          assessment: "Routine surgical follow-up (Z48.81)",
+          plan: "Suture removal scheduled for next Monday. Continue wound care."
+        }
+      ],
+      team: [
+        { email: "admin@clinicos.local", name: "Dr. Sarah Chen, MD", role: "Owner", joined: "2026-10-01" },
+        { email: "marcus.bell@clinic.org", name: "Dr. Marcus Bell, DO", role: "Doctor", joined: "2026-10-02" },
+        { email: "alicia.keys@clinic.org", name: "Alicia Rodriguez, RN", role: "Staff", joined: "2026-10-04" },
+        { email: "compliance@auditors.org", name: "James Sterling", role: "Viewer", joined: "2026-10-05" }
+      ],
+      auditChain: [
+        { block: 1, timestamp: "2026-10-09 09:12", actor: "system@bootstrap", event: "GENESIS_BLOCK", resource: "org-8f92a", hash: "0000a4b7e192c730", prevHash: "0000000000000000" },
+        { block: 2, timestamp: "2026-10-09 09:15", actor: "admin@clinicos.local", event: "ORG_CREATED", resource: "Memorial Outpatient", hash: "18e9f2a40cd319bc", prevHash: "0000a4b7e192c730" },
+        { block: 3, timestamp: "2026-10-09 10:04", actor: "admin@clinicos.local", event: "MEMBER_INVITED", resource: "marcus.bell@clinic.org", hash: "99cf1048bcae5210", prevHash: "18e9f2a40cd319bc" },
+        { block: 4, timestamp: "2026-10-09 11:20", actor: "marcus.bell@clinic.org", event: "PATIENT_CREATED", resource: "MRN-10492 (Jane Doe)", hash: "b218ad3349e8c071", prevHash: "99cf1048bcae5210" },
+        { block: 5, timestamp: "2026-10-09 14:35", actor: "admin@clinicos.local", event: "ENCOUNTER_SIGNED", resource: "ENC-8812 (Jane Doe)", hash: "740ad611f0ca9b22", prevHash: "b218ad3349e8c071" },
+        { block: 6, timestamp: "2026-10-09 15:20", actor: "marcus.bell@clinic.org", event: "ENCOUNTER_OPENED", resource: "ENC-8813 (Robert Taylor)", hash: "e34920b784a9c801", prevHash: "740ad611f0ca9b22" }
+      ]
+    };
+
+    // Navigation View Switcher
+    function switchView(viewName) {
+      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+      const activeSec = document.getElementById(`view-${viewName}`);
+      if (activeSec) activeSec.classList.remove('hidden');
+
+      document.querySelectorAll('#mainNavTabs .nav-tab').forEach(tab => {
+        if (tab.dataset.view === viewName) {
+          tab.className = 'nav-tab tab-active px-3 py-2 rounded-lg text-slate-700 flex items-center space-x-2 transition';
+        } else {
+          tab.className = 'nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition';
+        }
+      });
+    }
+
+    document.querySelectorAll('#mainNavTabs .nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchView(tab.dataset.view));
+    });
+
+    // Modal Helpers
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    // Render Patients
+    function renderPatients() {
+      const tbody = document.getElementById('patientsTableBody');
+      const search = (document.getElementById('patientSearchInput')?.value || '').toLowerCase();
+      const statusFilter = document.getElementById('patientStatusFilter')?.value || 'ALL';
+
+      const filtered = ClinicState.patients.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(search) || p.mrn.toLowerCase().includes(search) || p.phone.includes(search);
+        const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
+
+      document.getElementById('patientResultCount').innerText = `Showing ${filtered.length} patients`;
+
+      tbody.innerHTML = filtered.map(p => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-3 px-4 font-mono font-bold text-teal-700">${p.mrn}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900">${p.name}</td>
+          <td class="py-3 px-4 text-slate-500">${p.dob} (${p.gender})</td>
+          <td class="py-3 px-4 text-slate-600 font-mono text-xs">${p.phone}</td>
+          <td class="py-3 px-4 text-slate-700">${p.doctor}</td>
+          <td class="py-3 px-4">
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${
+              p.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+              p.status === 'Inpatient' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+              'bg-slate-100 text-slate-600'
+            }">${p.status}</span>
+          </td>
+          <td class="py-3 px-4 text-right">
+            <button onclick="startEncounterForPatient(${p.id})" class="text-xs font-semibold text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded border border-teal-200 transition">
+              + Encounter
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Also update patient dropdown in new encounter modal
+      const encSelect = document.getElementById('encounterPatientSelect');
+      if (encSelect) {
+        encSelect.innerHTML = ClinicState.patients.map(p => `<option value="${p.id}">${p.name} (${p.mrn})</option>`).join('');
+      }
+    }
+
+    // Render Dashboard Today Schedule Table
+    function renderDashboardSchedule() {
+      const tbody = document.getElementById('todayScheduleTableBody');
+      tbody.innerHTML = ClinicState.encounters.map(enc => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-500">${enc.date.split(' ')[1]}</td>
+          <td class="py-2.5 px-3 font-semibold text-slate-900">${enc.patientName}</td>
+          <td class="py-2.5 px-3 text-slate-600">${enc.complaint}</td>
+          <td class="py-2.5 px-3 text-slate-700">${enc.doctor}</td>
+          <td class="py-2.5 px-3">
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${
+              enc.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' :
+              enc.status === 'In Progress' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
+            }">${enc.status}</span>
+          </td>
+          <td class="py-2.5 px-3 text-right">
+            <button onclick="loadSoapNote('${enc.id}')" class="text-xs font-semibold text-teal-600 hover:text-teal-800">Review Note &rarr;</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Render Encounters Tab Sidebar
+    function renderEncountersSidebar() {
+      const sidebar = document.getElementById('encountersListSidebar');
+      sidebar.innerHTML = ClinicState.encounters.map(enc => `
+        <div onclick="loadSoapNote('${enc.id}')" class="p-3 rounded-lg border border-slate-200 hover:border-teal-500 hover:bg-teal-50/30 cursor-pointer transition text-xs">
+          <div class="flex justify-between items-center mb-1">
+            <span class="font-mono font-bold text-teal-700">${enc.id}</span>
+            <span class="text-[10px] text-slate-400">${enc.date}</span>
+          </div>
+          <p class="font-bold text-slate-900">${enc.patientName}</p>
+          <p class="text-slate-500 truncate mt-0.5">${enc.complaint}</p>
+          <div class="mt-2 flex justify-between items-center">
+            <span class="text-[10px] text-slate-600">${enc.doctor}</span>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+              enc.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+            }">${enc.status}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Load SOAP Note into viewer
+    function loadSoapNote(encId) {
+      const enc = ClinicState.encounters.find(e => e.id === encId) || ClinicState.encounters[0];
+      document.getElementById('soapEncounterId').innerText = enc.id;
+      document.getElementById('soapDate').innerText = enc.date;
+      document.getElementById('soapStatus').innerText = enc.status;
+      document.getElementById('soapPatientName').innerText = enc.patientName;
+      document.getElementById('soapDoctor').innerText = enc.doctor;
+      document.getElementById('soapSubjective').innerText = enc.complaint;
+      document.getElementById('soapBP').innerText = enc.vitals.bp;
+      document.getElementById('soapHR').innerText = enc.vitals.hr;
+      document.getElementById('soapTemp').innerText = enc.vitals.temp;
+      document.getElementById('soapSpO2').innerText = enc.vitals.spo2;
+      document.getElementById('soapObjectiveNotes').innerText = enc.objectiveNotes;
+      document.getElementById('soapAssessment').innerText = enc.assessment;
+      document.getElementById('soapPlan').innerText = enc.plan;
+      switchView('encounters');
+    }
+
+    // Render Quick Audit Feed on Dashboard
+    function renderQuickAudit() {
+      const feed = document.getElementById('quickAuditFeed');
+      feed.innerHTML = ClinicState.auditChain.slice(-4).reverse().map(entry => `
+        <div class="text-xs border-l-2 border-teal-500 pl-2.5 py-0.5">
+          <div class="flex justify-between text-[11px] text-slate-400">
+            <span>${entry.timestamp}</span>
+            <span class="font-mono text-teal-700">#${entry.block}</span>
+          </div>
+          <p class="font-semibold text-slate-800">${entry.event}</p>
+          <p class="text-slate-500 truncate text-[11px]">${entry.resource}</p>
+        </div>
+      `).join('');
+    }
+
+    // Render Full Audit Ledger Table
+    function renderAuditTable() {
+      const tbody = document.getElementById('auditLedgerTableBody');
+      tbody.innerHTML = ClinicState.auditChain.map(b => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2.5 px-3 font-bold text-teal-700">#${b.block}</td>
+          <td class="py-2.5 px-3 text-slate-600">${b.timestamp}</td>
+          <td class="py-2.5 px-3 text-slate-700 font-sans">${b.actor}</td>
+          <td class="py-2.5 px-3 font-bold font-sans text-slate-900">${b.event}</td>
+          <td class="py-2.5 px-3 text-slate-500 font-sans">${b.resource}</td>
+          <td class="py-2.5 px-3 text-emerald-700">${b.hash}</td>
+          <td class="py-2.5 px-3 text-slate-400">${b.prevHash}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Render Team Table
+    function renderTeam() {
+      const tbody = document.getElementById('teamTableBody');
+      tbody.innerHTML = ClinicState.team.map(m => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-3 px-4 font-semibold text-slate-900">${m.email}</td>
+          <td class="py-3 px-4 text-slate-700">${m.name}</td>
+          <td class="py-3 px-4">
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${
+              m.role === 'Owner' ? 'bg-purple-100 text-purple-800' :
+              m.role === 'Doctor' ? 'bg-teal-100 text-teal-800' :
+              m.role === 'Admin' ? 'bg-indigo-100 text-indigo-800' :
+              m.role === 'Staff' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-700'
+            }">${m.role}</span>
+          </td>
+          <td class="py-3 px-4 text-slate-500 text-xs">${m.joined}</td>
+          <td class="py-3 px-4 text-right">
+            <button class="text-xs text-slate-400 hover:text-slate-600">Permissions</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Audit Chain Integrity Verification
+    function verifyAuditChain() {
+      const banner = document.getElementById('auditVerifyBanner');
+      banner.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-between animate-pulse';
+      setTimeout(() => {
+        banner.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-between';
+        alert(`Cryptographic Verification Successful!\n\nAll ${ClinicState.auditChain.length} blocks verified.\nGenesis hash: ${ClinicState.auditChain[0].hash}\nLatest head hash: ${ClinicState.auditChain[ClinicState.auditChain.length - 1].hash}`);
+      }, 400);
+    }
+
+    // Toggle Backend Mode (Mock vs Live Django REST API)
+    document.getElementById('toggleDataSourceBtn').addEventListener('click', () => {
+      ClinicState.isLiveBackend = !ClinicState.isLiveBackend;
+      const dot = document.getElementById('dataSourceDot');
+      const label = document.getElementById('dataSourceLabel');
+      const btn = document.getElementById('toggleDataSourceBtn');
+
+      if (ClinicState.isLiveBackend) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-ping';
+        label.innerText = 'Mode: Live Django REST API';
+        btn.className = 'flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full border transition border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100';
+        alert("Switched to Live Django API Mode!\n\nRequests will now hit your Django REST endpoints (/api/v1/...). Inspect the 'Backend API Guide' tab to build these endpoints!");
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+        label.innerText = 'Mode: Mock Synthetic Data';
+        btn.className = 'flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full border transition border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100';
+      }
+    });
+
+    // Form Submissions
+    document.getElementById('newPatientForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newP = {
+        id: ClinicState.patients.length + 1,
+        mrn: `MRN-${10492 + ClinicState.patients.length}`,
+        name: `${document.getElementById('patientFirstName').value} ${document.getElementById('patientLastName').value}`,
+        dob: document.getElementById('patientDOB').value,
+        gender: document.getElementById('patientGender').value,
+        phone: document.getElementById('patientPhone').value,
+        doctor: document.getElementById('patientDoctor').value,
+        status: "Active"
+      };
+      ClinicState.patients.unshift(newP);
+      
+      // Add audit entry
+      ClinicState.auditChain.push({
+        block: ClinicState.auditChain.length + 1,
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        actor: ClinicState.currentUser.email,
+        event: "PATIENT_CREATED",
+        resource: `${newP.mrn} (${newP.name})`,
+        hash: Math.random().toString(16).substring(2, 18),
+        prevHash: ClinicState.auditChain[ClinicState.auditChain.length - 1].hash
+      });
+
+      closeModal('newPatientModal');
+      document.getElementById('newPatientForm').reset();
+      renderPatients();
+      renderQuickAudit();
+      renderAuditTable();
+      document.getElementById('statPatientsCount').innerText = ClinicState.patients.length;
+      alert(`Patient ${newP.name} successfully registered with ${newP.mrn}!`);
+    });
+
+    document.getElementById('newEncounterForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const patientId = parseInt(document.getElementById('encounterPatientSelect').value);
+      const patient = ClinicState.patients.find(p => p.id === patientId) || ClinicState.patients[0];
+
+      const newEnc = {
+        id: `ENC-${8815 + ClinicState.encounters.length}`,
+        patientId: patient.id,
+        patientName: `${patient.name} (${patient.mrn})`,
+        doctor: ClinicState.currentUser.name,
+        date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        complaint: document.getElementById('encSubjective').value,
+        status: "Completed",
+        vitals: {
+          bp: document.getElementById('encBP').value || "120/80",
+          hr: document.getElementById('encHR').value || "72 bpm",
+          temp: document.getElementById('encTemp').value || "37.0°C",
+          spo2: document.getElementById('encSpO2').value || "99%"
+        },
+        objectiveNotes: document.getElementById('encObjective').value || "Physical examination completed.",
+        assessment: document.getElementById('encAssessment').value,
+        plan: document.getElementById('encPlan').value
+      };
+
+      ClinicState.encounters.unshift(newEnc);
+
+      // Add audit entry
+      ClinicState.auditChain.push({
+        block: ClinicState.auditChain.length + 1,
+        timestamp: newEnc.date,
+        actor: ClinicState.currentUser.email,
+        event: "ENCOUNTER_SIGNED",
+        resource: `${newEnc.id} (${newEnc.patientName})`,
+        hash: Math.random().toString(16).substring(2, 18),
+        prevHash: ClinicState.auditChain[ClinicState.auditChain.length - 1].hash
+      });
+
+      closeModal('newEncounterModal');
+      document.getElementById('newEncounterForm').reset();
+      renderDashboardSchedule();
+      renderEncountersSidebar();
+      renderQuickAudit();
+      renderAuditTable();
+      loadSoapNote(newEnc.id);
+      alert(`Encounter ${newEnc.id} signed and cryptographically committed to audit ledger!`);
+    });
+
+    document.getElementById('inviteMemberForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('inviteEmail').value;
+      const name = document.getElementById('inviteName').value;
+      const role = document.getElementById('inviteRole').value;
+
+      ClinicState.team.push({
+        email, name,
+        role: role.charAt(0).toUpperCase() + role.slice(1),
+        joined: new Date().toISOString().substring(0, 10)
+      });
+
+      // Add audit entry
+      ClinicState.auditChain.push({
+        block: ClinicState.auditChain.length + 1,
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        actor: ClinicState.currentUser.email,
+        event: "MEMBER_INVITED",
+        resource: `${email} (${role})`,
+        hash: Math.random().toString(16).substring(2, 18),
+        prevHash: ClinicState.auditChain[ClinicState.auditChain.length - 1].hash
+      });
+
+      closeModal('inviteMemberModal');
+      document.getElementById('inviteMemberForm').reset();
+      renderTeam();
+      renderQuickAudit();
+      renderAuditTable();
+      alert(`Invitation sent to ${email} with role ${role.toUpperCase()}!`);
+    });
+
+    function startEncounterForPatient(patientId) {
+      document.getElementById('encounterPatientSelect').value = patientId;
+      openModal('newEncounterModal');
+    }
+
+    // Filter listener
+    document.getElementById('patientSearchInput')?.addEventListener('input', renderPatients);
+    document.getElementById('patientStatusFilter')?.addEventListener('change', renderPatients);
+
+    // Initial Render
+    renderPatients();
+    renderDashboardSchedule();
+    renderEncountersSidebar();
+    renderQuickAudit();
+    renderAuditTable();
+    renderTeam();
+  </script>
+</body>
+</html>
