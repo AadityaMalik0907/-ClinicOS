@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — ClinicOS Clinical Portal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            },
+            clinical: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .clinical-grid-bg {
+      background-image: radial-gradient(rgba(20, 184, 166, 0.14) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.04); }
+    }
+    .glow-orb {
+      animation: pulse-slow 8s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
+
+  <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-screen">
+
+    <!-- ================= LEFT PANEL: CLINICAL BRAND & SECURITY SHOWCASE ================= -->
+    <div class="lg:col-span-5 bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900 text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
+      <!-- Subtle Background Grid & Decorative Orbs -->
+      <div class="absolute inset-0 clinical-grid-bg pointer-events-none"></div>
+      <div class="glow-orb absolute -top-24 -left-24 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="glow-orb absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Top Brand Header -->
+      <div class="relative z-10 flex items-center justify-between">
+        <a href="/?demo=1" class="flex items-center space-x-3 group">
+          <div class="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 shadow-lg shadow-teal-950/50 group-hover:bg-teal-500/30 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+          </div>
+          <div>
+            <span class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+              Clinic<span class="text-teal-400">OS</span>
+              <span class="text-[10px] uppercase font-semibold bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-400/30 tracking-wider">v0.1</span>
+            </span>
+          </div>
+        </a>
+
+        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300 bg-emerald-950/80 border border-emerald-700/50 px-3 py-1 rounded-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Auth Service Online
+        </span>
+      </div>
+
+      <!-- Center Value Proposition & Security Pillars -->
+      <div class="relative z-10 my-10 lg:my-0 space-y-8">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-widest text-teal-400 bg-teal-950/90 border border-teal-800/80 px-3 py-1 rounded-full">
+            Multi-Tenant Healthcare Platform
+          </span>
+          <h1 class="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            Clinical operations with cryptographic trust.
+          </h1>
+          <p class="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed">
+            Sign in to access tenant-isolated patient records, SOAP encounter documentation, role-based access controls, and the tamper-evident audit ledger.
+          </p>
+        </div>
+
+        <!-- Feature Pillars -->
+        <div class="space-y-4">
+          <div class="flex items-start space-x-3.5 bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-sm">
+            <div class="p-2 rounded-lg bg-teal-500/20 text-teal-300 shrink-0 mt-0.5">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-white">Hardened Session &amp; CSRF Security</h3>
+              <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                Authenticated via Django <code class="text-teal-300 font-mono">SessionAuthentication</code> with strict CSRF token verification and normalized email identifiers.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3.5 bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-sm">
+            <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 shrink-0 mt-0.5">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-white">Strict Organization &amp; RBAC Isolation</h3>
+              <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                Granular permissions across <span class="text-white font-medium">Owner, Admin, Doctor, Staff,</span> and <span class="text-white font-medium">Viewer</span> memberships per clinic tenant.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3.5 bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-sm">
+            <div class="p-2 rounded-lg bg-cyan-500/20 text-cyan-300 shrink-0 mt-0.5">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-white">Tamper-Evident Audit Chain</h3>
+              <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                Every clinical note sign-off and record mutation is cryptographically linked to prevent retroactive tampering.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Security Telemetry Footer -->
+      <div class="relative z-10 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
+        <div class="flex items-center space-x-2">
+          <span class="font-mono text-[11px] text-teal-300 bg-teal-950/90 border border-teal-800 px-2 py-0.5 rounded">POST /api/auth/login/</span>
+          <span class="font-mono text-[11px] text-slate-300 bg-slate-800/90 border border-slate-700 px-2 py-0.5 rounded">POST /api/auth/register/</span>
+        </div>
+        <span>CSRF Token Handshake: <strong id="csrfStatusBadge" class="text-amber-300 font-mono">Initializing...</strong></span>
+      </div>
+    </div>
+
+    <!-- ================= RIGHT PANEL: AUTHENTICATION FORM CARD ================= -->
+    <div class="lg:col-span-7 flex flex-col justify-center items-center p-6 sm:p-12 bg-slate-50">
+      <div class="w-full max-w-md space-y-6">
+
+        <!-- Card Container -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-200/50 p-6 sm:p-8">
+
+          <!-- Mode Switcher Tabs (Sign In vs Create Account) -->
+          <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/80 mb-6">
+            <button type="button" id="tabLoginBtn" onclick="switchAuthTab('login')" class="py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all shadow-sm bg-white text-slate-900">
+              Sign In
+            </button>
+            <button type="button" id="tabRegisterBtn" onclick="switchAuthTab('register')" class="py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900">
+              Create Account
+            </button>
+          </div>
+
+          <!-- Dynamic Header -->
+          <div class="mb-6">
+            <h2 id="authHeading" class="text-2xl font-bold text-slate-900 tracking-tight">Welcome back, Clinician</h2>
+            <p id="authSubheading" class="text-xs sm:text-sm text-slate-500 mt-1">
+              Enter your email address and password to access your clinic workspace.
+            </p>
+          </div>
+
+          <!-- Feedback Alert Box (Errors / Success) -->
+          <div id="authAlertBox" class="hidden mb-5 rounded-xl p-3.5 text-xs border flex items-start space-x-2.5">
+            <svg id="authAlertIcon" class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+            <div class="flex-1">
+              <p id="authAlertTitle" class="font-bold"></p>
+              <div id="authAlertBody" class="mt-0.5 leading-relaxed"></div>
+            </div>
+          </div>
+
+          <!-- ================= FORM 1: SIGN IN ================= -->
+          <form id="loginForm" class="space-y-4" novalidate>
+            <div>
+              <label for="loginEmail" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                Work Email Address
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                </div>
+                <input
+                  type="email"
+                  id="loginEmail"
+                  name="email"
+                  required
+                  autocomplete="email"
+                  placeholder="clinician@clinic.org"
+                  class="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/60 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:outline-none transition"
+                >
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="loginPassword" class="block text-xs font-semibold text-slate-700">
+                  Password
+                </label>
+                <button type="button" onclick="switchAuthTab('register')" class="text-xs font-medium text-teal-600 hover:text-teal-700">
+                  Need an account?
+                </button>
+              </div>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <input
+                  type="password"
+                  id="loginPassword"
+                  name="password"
+                  required
+                  autocomplete="current-password"
+                  placeholder="••••••••••••"
+                  class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50/60 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:outline-none transition"
+                >
+                <button
+                  type="button"
+                  onclick="togglePasswordVisibility('loginPassword', 'loginEyeIcon')"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  title="Show or hide password"
+                >
+                  <svg id="loginEyeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <label class="inline-flex items-center space-x-2 cursor-pointer select-none">
+                <input type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500">
+                <span class="text-xs text-slate-600">Keep clinical session active</span>
+              </label>
+              <span class="text-[11px] font-mono text-slate-400">HTTP-Only Session</span>
+            </div>
+
+            <button
+              type="submit"
+              id="loginSubmitBtn"
+              class="w-full mt-2 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-semibold py-2.5 px-4 rounded-xl shadow-sm shadow-teal-600/20 transition flex items-center justify-center space-x-2 text-sm"
+            >
+              <span id="loginSubmitText">Sign In to ClinicOS</span>
+              <svg id="loginSubmitArrow" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </button>
+          </form>
+
+          <!-- ================= FORM 2: CREATE ACCOUNT (REGISTER) ================= -->
+          <form id="registerForm" class="space-y-4 hidden" novalidate>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="regFirstName" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  id="regFirstName"
+                  name="first_name"
+                  required
+                  autocomplete="given-name"
+                  placeholder="Sarah"
+                  class="w-full px-3.5 py-2.5 text-sm bg-slate-50/60 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:outline-none transition"
+                >
+              </div>
+              <div>
+                <label for="regLastName" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Last Name &amp; Credentials
+                </label>
+                <input
+                  type="text"
+                  id="regLastName"
+                  name="last_name"
+                  required
+                  autocomplete="family-name"
+                  placeholder="Chen, MD"
+                  class="w-full px-3.5 py-2.5 text-sm bg-slate-50/60 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:outline-none transition"
+                >
+              </div>
+            </div>
+
+            <div>
+              <label for="regEmail" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                Work Email Address
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                </div>
+                <input
+                  type="email"
+                  id="regEmail"
+                  name="email"
+                  required
+                  autocomplete="email"
+                  placeholder="sarah.chen@clinic.org"
+                  class="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/60 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:outline-none transition"
+                >
+              </div>
+            </div>
+
+            <div>
+              <label for="regPassword" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                Create Password
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <input
+                  type="password"
+                  id="regPassword"
+                  name="password"
+                  required
+                  autocomplete="new-password"
+                  placeholder="At least 8 characters"
+                  oninput="evaluatePasswordStrength(this.value)"
+                  class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50/60 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:outline-none transition"
+                >
+                <button
+                  type="button"
+                  onclick="togglePasswordVisibility('regPassword', 'regEyeIcon')"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  title="Show or hide password"
+                >
+                  <svg id="regEyeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Live Password Strength Meter -->
+              <div class="mt-2.5 space-y-1.5">
+                <div class="grid grid-cols-4 gap-1.5 h-1.5">
+                  <div id="pwBar1" class="rounded-full bg-slate-200 transition-colors"></div>
+                  <div id="pwBar2" class="rounded-full bg-slate-200 transition-colors"></div>
+                  <div id="pwBar3" class="rounded-full bg-slate-200 transition-colors"></div>
+                  <div id="pwBar4" class="rounded-full bg-slate-200 transition-colors"></div>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                  <span id="pwStrengthLabel">Use 8+ characters with letters, numbers &amp; symbols</span>
+                  <span id="pwLengthBadge" class="font-mono text-slate-400">0 / 8+</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              id="registerSubmitBtn"
+              class="w-full mt-2 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-semibold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center space-x-2 text-sm"
+            >
+              <span id="registerSubmitText">Create Clinician Account</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+            </button>
+          </form>
+
+          <!-- Divider: Quick Demo Sandbox -->
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-slate-200"></div>
+            </div>
+            <div class="relative flex justify-center text-[11px] uppercase tracking-wider">
+              <span class="bg-white px-3 text-slate-400 font-semibold">Or Instant Sandbox Preview</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onclick="oneClickDemoAccount()"
+              id="quickDemoBtn"
+              class="w-full py-2.5 px-3 rounded-xl border border-teal-200 bg-teal-50/70 hover:bg-teal-100/80 text-teal-800 font-semibold text-xs transition flex items-center justify-center space-x-1.5"
+              title="Automatically registers/signs in a real demo doctor session via Django API"
+            >
+              <svg class="w-4 h-4 text-teal-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>1-Click Live API Demo</span>
+            </button>
+
+            <a
+              href="/?demo=1"
+              class="w-full py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition flex items-center justify-center space-x-1.5"
+              title="Open the UI in synthetic mock data mode without logging in"
+            >
+              <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span>Synthetic Mock Mode</span>
+            </a>
+          </div>
+
+        </div>
+
+        <!-- Bottom Help Note -->
+        <p class="text-center text-xs text-slate-400">
+          Protected by Django Session &amp; CSRF Middleware &bull; <a href="/admin/" class="text-slate-600 hover:text-teal-600 font-medium underline underline-offset-2">Django Admin Portal</a>
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= AUTHENTICATION CLIENT SCRIPT ================= -->
+  <script>
+    // Read cookie helper (for Django's csrftoken)
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Ensure CSRF cookie is set via GET /api/auth/csrf/
+    async function ensureCsrfCookie() {
+      const badge = document.getElementById('csrfStatusBadge');
+      try {
+        const res = await fetch('/api/auth/csrf/', {
+          method: 'GET',
+          credentials: 'same-origin'
+        });
+        if (res.ok) {
+          badge.textContent = 'Ready (Cookie Set)';
+          badge.className = 'text-emerald-400 font-mono';
+        } else {
+          badge.textContent = 'HTTP ' + res.status;
+          badge.className = 'text-amber-400 font-mono';
+        }
+      } catch (err) {
+        badge.textContent = 'Offline';
+        badge.className = 'text-rose-400 font-mono';
+      }
+    }
+
+    // Switch between Sign In and Create Account tabs
+    function switchAuthTab(mode) {
+      hideAlert();
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      const tabLoginBtn = document.getElementById('tabLoginBtn');
+      const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+      const heading = document.getElementById('authHeading');
+      const subheading = document.getElementById('authSubheading');
+
+      if (mode === 'login') {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        tabLoginBtn.className = 'py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all shadow-sm bg-white text-slate-900';
+        tabRegisterBtn.className = 'py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900';
+        heading.textContent = 'Welcome back, Clinician';
+        subheading.textContent = 'Enter your email address and password to access your clinic workspace.';
+      } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        tabRegisterBtn.className = 'py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all shadow-sm bg-white text-slate-900';
+        tabLoginBtn.className = 'py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900';
+        heading.textContent = 'Create Clinician Account';
+        subheading.textContent = 'Register your credentials to start managing patients and clinical encounters.';
+      }
+    }
+
+    // Toggle Password Visibility
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // Password strength indicator for Registration
+    function evaluatePasswordStrength(pw) {
+      const bars = [
+        document.getElementById('pwBar1'),
+        document.getElementById('pwBar2'),
+        document.getElementById('pwBar3'),
+        document.getElementById('pwBar4')
+      ];
+      const label = document.getElementById('pwStrengthLabel');
+      const lengthBadge = document.getElementById('pwLengthBadge');
+
+      lengthBadge.textContent = `${pw.length} / 8+`;
+
+      let score = 0;
+      if (pw.length >= 8) score++;
+      if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+      if (/\d/.test(pw) && !/^\d+$/.test(pw)) score++;
+      if (/[^A-Za-z0-9]/.test(pw) || pw.length >= 12) score++;
+
+      const colors = ['bg-rose-500', 'bg-amber-500', 'bg-teal-500', 'bg-emerald-500'];
+      const labels = [
+        'Too short — minimum 8 characters required',
+        'Weak — add numbers and mixed case letters',
+        'Good — meets clinical password policy',
+        'Strong — high-entropy clinical password'
+      ];
+
+      bars.forEach((bar, idx) => {
+        bar.className = 'rounded-full transition-colors ' + (idx < score ? colors[Math.max(0, score - 1)] : 'bg-slate-200');
+      });
+
+      if (pw.length === 0) {
+        label.textContent = 'Use 8+ characters with letters, numbers & symbols';
+        label.className = 'text-slate-500';
+      } else {
+        label.textContent = labels[Math.max(0, score - 1)];
+        label.className = score >= 3 ? 'text-teal-700 font-medium' : 'text-amber-700';
+      }
+    }
+
+    // Show Alert Banner
+    function showAlert(type, title, messages) {
+      const box = document.getElementById('authAlertBox');
+      const icon = document.getElementById('authAlertIcon');
+      const titleEl = document.getElementById('authAlertTitle');
+      const bodyEl = document.getElementById('authAlertBody');
+
+      box.classList.remove('hidden', 'bg-rose-50', 'border-rose-200', 'text-rose-900', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-900');
+
+      if (type === 'error') {
+        box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-900');
+        icon.className = 'w-4 h-4 shrink-0 mt-0.5 text-rose-600';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+      } else {
+        box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-900');
+        icon.className = 'w-4 h-4 shrink-0 mt-0.5 text-emerald-600';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />';
+      }
+
+      titleEl.textContent = title;
+      if (Array.isArray(messages)) {
+        bodyEl.innerHTML = '<ul class="list-disc list-inside space-y-0.5">' +
+          messages.map(m => `<li>${escapeHtml(m)}</li>`).join('') +
+          '</ul>';
+      } else {
+        bodyEl.textContent = messages;
+      }
+    }
+
+    function hideAlert() {
+      document.getElementById('authAlertBox').classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Format DRF error payloads cleanly
+    function parseDrfErrors(data) {
+      if (!data) return ['An unexpected error occurred.'];
+      if (typeof data.detail === 'string') return [data.detail];
+      const msgs = [];
+      for (const [field, errors] of Object.entries(data)) {
+        const label = field === 'non_field_errors' ? '' : `${field.replace('_', ' ')}: `;
+        if (Array.isArray(errors)) {
+          errors.forEach(e => msgs.push(`${label}${e}`));
+        } else if (typeof errors === 'string') {
+          msgs.push(`${label}${errors}`);
+        }
+      }
+      return msgs.length ? msgs : ['Please check your input and try again.'];
+    }
+
+    // Perform Login API Request
+    async function performLogin(email, password) {
+      if (!getCookie('csrftoken')) {
+        await ensureCsrfCookie();
+      }
+      const res = await fetch('/api/auth/login/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken') || ''
+        },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    // Sign In Form Handler
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        showAlert('error', 'Missing Credentials', 'Please enter both your email address and password.');
+        return;
+      }
+
+      const btn = document.getElementById('loginSubmitBtn');
+      const btnText = document.getElementById('loginSubmitText');
+      btn.disabled = true;
+      btnText.textContent = 'Verifying Session...';
+
+      try {
+        const result = await performLogin(email, password);
+        if (result.ok) {
+          showAlert('success', 'Authenticated', 'Redirecting to ClinicOS Command Center...');
+          window.location.href = '/';
+        } else {
+          showAlert('error', 'Sign In Failed', parseDrfErrors(result.data));
+          btn.disabled = false;
+          btnText.textContent = 'Sign In to ClinicOS';
+        }
+      } catch (err) {
+        showAlert('error', 'Network Error', 'Could not reach the ClinicOS authentication server.');
+        btn.disabled = false;
+        btnText.textContent = 'Sign In to ClinicOS';
+      }
+    });
+
+    // Register Form Handler
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const first_name = document.getElementById('regFirstName').value.trim();
+      const last_name = document.getElementById('regLastName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+
+      if (!email || !password) {
+        showAlert('error', 'Required Fields Missing', 'Please provide an email address and password.');
+        return;
+      }
+
+      const btn = document.getElementById('registerSubmitBtn');
+      const btnText = document.getElementById('registerSubmitText');
+      btn.disabled = true;
+      btnText.textContent = 'Creating Account...';
+
+      try {
+        if (!getCookie('csrftoken')) {
+          await ensureCsrfCookie();
+        }
+        const regRes = await fetch('/api/auth/register/', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken') || ''
+          },
+          body: JSON.stringify({ email, password, first_name, last_name })
+        });
+        const regData = await regRes.json().catch(() => ({}));
+
+        if (!regRes.ok) {
+          showAlert('error', 'Registration Error', parseDrfErrors(regData));
+          btn.disabled = false;
+          btnText.textContent = 'Create Clinician Account';
+          return;
+        }
+
+        // Automatically sign in the newly registered user
+        btnText.textContent = 'Signing In...';
+        const loginResult = await performLogin(email, password);
+        if (loginResult.ok) {
+          showAlert('success', 'Account Created & Signed In', 'Welcome to ClinicOS! Redirecting to dashboard...');
+          window.location.href = '/';
+        } else {
+          switchAuthTab('login');
+          document.getElementById('loginEmail').value = email;
+          showAlert('success', 'Account Created', 'Your account is ready. Please sign in below.');
+          btn.disabled = false;
+          btnText.textContent = 'Create Clinician Account';
+        }
+      } catch (err) {
+        showAlert('error', 'Network Error', 'Could not reach the ClinicOS server.');
+        btn.disabled = false;
+        btnText.textContent = 'Create Clinician Account';
+      }
+    });
+
+    // 1-Click Live API Demo Clinician Login (creates or logs into demo@clinicos.org)
+    async function oneClickDemoAccount() {
+      hideAlert();
+      const btn = document.getElementById('quickDemoBtn');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.textContent = 'Preparing Demo Session...';
+
+      const demoCreds = {
+        email: 'sarah.chen@clinicos.org',
+        password: 'ClinicOS!Demo2026',
+        first_name: 'Dr. Sarah',
+        last_name: 'Chen, MD'
+      };
+
+      try {
+        await ensureCsrfCookie();
+        // Try logging in first
+        let loginRes = await performLogin(demoCreds.email, demoCreds.password);
+        if (!loginRes.ok) {
+          // Register the demo clinician account, then log in
+          await fetch('/api/auth/register/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: JSON.stringify(demoCreds)
+          });
+          loginRes = await performLogin(demoCreds.email, demoCreds.password);
+        }
+
+        if (loginRes.ok) {
+          showAlert('success', 'Demo Clinician Authenticated', 'Signed in as Dr. Sarah Chen, MD. Redirecting...');
+          window.location.href = '/';
+        } else {
+          window.location.href = '/?demo=1';
+        }
+      } catch (err) {
+        window.location.href = '/?demo=1';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+
+    // Initialize CSRF cookie on load
+    ensureCsrfCookie();
+  </script>
+</body>
+</html>
