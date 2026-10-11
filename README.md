@@ -32,7 +32,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000/admin/`. To use PostgreSQL instead, start Docker Desktop and run `docker compose up --build`; Compose configures the web service to use its PostgreSQL container.
+Open `http://127.0.0.1:8000/login/` to use the sign-in and account-creation page. The homepage at `http://127.0.0.1:8000/` sends signed-out visitors to login. Open `http://127.0.0.1:8000/admin/` for the Django administration site. To use PostgreSQL instead, start Docker Desktop and run `docker compose up --build`; Compose configures the web service to use its PostgreSQL container.
 
 The default database password and Django secret are for local development only. Do not deploy them. Do not put real patient information in this project.
 
