@@ -1,6 +1,9 @@
 """Development settings. Secrets and database credentials come from the environment."""
 
 import os
+import base64
+import hashlib
+from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -8,6 +11,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me")
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
+_field_key = os.environ.get("FIELD_ENCRYPTION_KEY")
+if not _field_key:
+    if not DEBUG:
+        raise ImproperlyConfigured("FIELD_ENCRYPTION_KEY is required when DEBUG is false.")
+    _field_key = base64.urlsafe_b64encode(hashlib.sha256(SECRET_KEY.encode("utf-8")).digest()).decode("ascii")
+FIELD_ENCRYPTION_KEY = _field_key
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 if "testserver" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("testserver")
@@ -23,12 +32,17 @@ INSTALLED_APPS = [
     "accounts",
 ]
 
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "accounts.exceptions.api_exception_handler",
+}
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.PostgresRLSContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -50,8 +64,8 @@ if os.environ.get("DB_ENGINE", "sqlite").lower() == "postgres":
     DATABASES = {"default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ.get("POSTGRES_DB", "clinicos"),
-        "USER": os.environ.get("POSTGRES_USER", "clinicos"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "clinicos-dev"),
+        "USER": os.environ.get("POSTGRES_APP_USER", os.environ.get("POSTGRES_USER", "clinicos")),
+        "PASSWORD": os.environ.get("POSTGRES_APP_PASSWORD", os.environ.get("POSTGRES_PASSWORD", "clinicos-dev")),
         "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }}

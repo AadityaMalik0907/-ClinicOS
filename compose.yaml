@@ -14,22 +14,38 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  db-setup:
+    image: postgres:17-alpine
+    entrypoint: ["/bin/sh", "/docker/postgres-setup.sh"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-clinicos}
+      POSTGRES_USER: ${POSTGRES_USER:-clinicos}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-clinicos-dev}
+      POSTGRES_HOST: db
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-clinicos_app}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-clinicos-app-dev}
+    volumes:
+      - ./docker:/docker:ro
+    depends_on:
+      db:
+        condition: service_healthy
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-clinicos}
-      POSTGRES_USER: ${POSTGRES_USER:-clinicos}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-clinicos-dev}
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-clinicos_app}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-clinicos-app-dev}
       POSTGRES_HOST: db
       DB_ENGINE: postgres
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-local-only-change-me}
       DJANGO_DEBUG: "true"
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:-}
     ports:
       - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
     volumes:
       - .:/app
 

@@ -68,36 +68,31 @@
 
           <!-- Organization (Tenant) Switcher -->
           <div class="relative">
-            <div class="flex items-center space-x-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 cursor-pointer transition" id="tenantMenuBtn">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <div class="text-left">
-                <p class="text-xs text-slate-500 font-medium leading-none">Active Organization</p>
-                <p class="text-sm font-semibold text-slate-900 leading-tight" id="activeOrgName">Memorial Outpatient Center</p>
-              </div>
-              <span id="planBadge" class="ml-1 text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">PRO PLAN</span>
-              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
+            <label class="text-xs text-slate-500 font-medium mr-1" for="activeOrgSelector">Organization</label>
+            <select id="activeOrgSelector" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 max-w-56" disabled>
+              <option value="">Loading organizations…</option>
+            </select>
           </div>
         </div>
 
         <!-- Header Actions: API Mode Switcher & User Profile -->
         <div class="flex items-center space-x-3">
           <!-- Backend Connection Mode Pill -->
-          <button id="toggleDataSourceBtn" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full border transition border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100" title="Click to toggle between Mock Synthetic Data and Live Django REST API">
-            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="dataSourceDot"></span>
-            <span id="dataSourceLabel">Mode: Mock Synthetic Data</span>
-          </button>
+          <span class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-900">
+            <span class="w-2 h-2 rounded-full bg-emerald-500" id="dataSourceDot"></span>
+            <span id="dataSourceLabel">Live Django API</span>
+          </span>
 
           <!-- Current User Profile Pill & Sign Out -->
           <div class="flex items-center space-x-2.5 pl-2 border-l border-slate-200">
             <div id="currentUserInitials" class="w-8 h-8 rounded-full bg-teal-100 text-teal-800 font-bold flex items-center justify-center text-xs border border-teal-200">
-              SC
+              —
             </div>
             <div class="hidden sm:block text-left">
-              <p class="text-xs font-semibold text-slate-900" id="currentUserName">Dr. Sarah Chen, MD</p>
+              <p class="text-xs font-semibold text-slate-900" id="currentUserName">Loading account…</p>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-medium bg-teal-50 text-teal-700 px-1.5 rounded border border-teal-200" id="currentUserRole">Doctor</span>
-                <span class="text-[11px] text-slate-400" id="currentUserEmail">admin@clinicos.local</span>
+                <span class="text-[10px] font-medium bg-teal-50 text-teal-700 px-1.5 rounded border border-teal-200" id="currentUserRole">Member</span>
+                <span class="text-[11px] text-slate-400" id="currentUserEmail">—</span>
               </div>
             </div>
             <button
@@ -160,7 +155,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h1 class="text-2xl font-bold text-slate-900">Clinical Command Center</h1>
-          <p class="text-sm text-slate-500 mt-1">Tenant Scoped to: <strong class="text-slate-800 font-semibold" id="tenantSubhead">Memorial Outpatient Center</strong> (ID: <code class="text-xs bg-slate-100 px-1 py-0.5 rounded text-teal-700">org-8f92a</code>)</p>
+          <p class="text-sm text-slate-500 mt-1">Tenant Scoped to: <strong class="text-slate-800 font-semibold" id="tenantSubhead">Select an organization to view clinic data</strong></p>
         </div>
         <div class="flex items-center flex-wrap gap-2.5">
           <button onclick="openModal('newPatientModal')" class="inline-flex items-center space-x-1.5 bg-teal-600 hover:bg-teal-700 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition">
@@ -185,8 +180,8 @@
             </span>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
-            <span class="text-3xl font-extrabold text-slate-900" id="statPatientsCount">142</span>
-            <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+12 this week</span>
+            <span class="text-3xl font-extrabold text-slate-900" id="statPatientsCount">0</span>
+            <span class="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full">From selected clinic</span>
           </div>
           <p class="text-xs text-slate-400 mt-2">Strict tenant isolation active</p>
         </div>
@@ -194,14 +189,14 @@
         <!-- Metric 2: Today's Encounters -->
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Today's Visits</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Encounters</span>
             <span class="p-2 bg-blue-50 text-blue-600 rounded-lg">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </span>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
-            <span class="text-3xl font-extrabold text-slate-900" id="statEncountersCount">8</span>
-            <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">3 In Progress</span>
+            <span class="text-3xl font-extrabold text-slate-900" id="statEncountersCount">0</span>
+            <span class="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full">From selected clinic</span>
           </div>
           <p class="text-xs text-slate-400 mt-2">SOAP clinical documentation</p>
         </div>
@@ -217,10 +212,10 @@
           <div class="mt-3">
             <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
               <span>Patient Capacity</span>
-              <span>142 / 1,000 (14.2%)</span>
+              <span>Usage limits are not implemented</span>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-2">
-              <div class="bg-purple-600 h-2 rounded-full" style="width: 14.2%"></div>
+              <div class="bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
             </div>
           </div>
           <p class="text-xs text-slate-400 mt-2">Metering & rate limits enforced</p>
@@ -235,10 +230,10 @@
             </span>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
-            <span class="text-xl font-bold text-emerald-700">Verified</span>
-            <span class="text-xs font-mono bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">SHA-256 Chain</span>
+            <span class="text-xl font-bold text-slate-500">Not available</span>
+            <span class="text-xs font-mono bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-200">Audit phase pending</span>
           </div>
-          <p class="text-xs text-slate-400 mt-2">Zero tamper events detected</p>
+          <p class="text-xs text-slate-400 mt-2">Audit logging has not been implemented</p>
         </div>
       </div>
 
@@ -249,8 +244,8 @@
         <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
           <div class="flex items-center justify-between mb-4">
             <div>
-              <h2 class="text-base font-bold text-slate-900">Scheduled Encounters for Today</h2>
-              <p class="text-xs text-slate-500">Synthetic patient encounters assigned to clinical staff</p>
+              <h2 class="text-base font-bold text-slate-900">Recent Encounters</h2>
+              <p class="text-xs text-slate-500">Records loaded from the selected organization</p>
             </div>
             <button onclick="switchView('encounters')" class="text-xs font-semibold text-teal-600 hover:text-teal-700">View All Encounters &rarr;</button>
           </div>
@@ -385,12 +380,12 @@
             <div class="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200" id="soapEncounterId">ENC-8812</span>
-                  <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium" id="soapDate">2026-10-09 14:30 UTC</span>
-                  <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold" id="soapStatus">Completed</span>
+                  <span class="text-xs font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200" id="soapEncounterId">—</span>
+                  <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium" id="soapDate">—</span>
+                  <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold" id="soapStatus">—</span>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 mt-2" id="soapPatientName">Jane Doe (MRN-10492)</h3>
-                <p class="text-xs text-slate-500">Provider: <strong class="text-slate-700" id="soapDoctor">Dr. Sarah Chen, MD</strong></p>
+                <h3 class="text-lg font-bold text-slate-900 mt-2" id="soapPatientName">No encounter selected</h3>
+                <p class="text-xs text-slate-500">Provider: <strong class="text-slate-700" id="soapDoctor">—</strong></p>
               </div>
               <button onclick="alert('Print / Export PDF feature ready for backend integration')" class="text-xs text-slate-600 border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
@@ -403,28 +398,28 @@
               <!-- S -->
               <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
                 <span class="text-xs font-bold text-teal-700 uppercase tracking-wider block mb-1">Subjective (S)</span>
-                <p class="text-slate-800" id="soapSubjective">Patient presents with persistent cough for 4 days, mild fever (38°C), and fatigue. Denies shortness of breath.</p>
+                <p class="text-slate-800" id="soapSubjective">—</p>
               </div>
               <!-- O -->
               <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
                 <span class="text-xs font-bold text-teal-700 uppercase tracking-wider block mb-1">Objective (O) - Vitals & Findings</span>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">BP</span><span class="font-bold text-slate-800" id="soapBP">122/78</span></div>
-                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">Heart Rate</span><span class="font-bold text-slate-800" id="soapHR">76 bpm</span></div>
-                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">Temp</span><span class="font-bold text-slate-800" id="soapTemp">37.8°C</span></div>
-                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">SpO2</span><span class="font-bold text-slate-800" id="soapSpO2">98%</span></div>
+                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">BP</span><span class="font-bold text-slate-800" id="soapBP">—</span></div>
+                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">Heart Rate</span><span class="font-bold text-slate-800" id="soapHR">—</span></div>
+                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">Temp</span><span class="font-bold text-slate-800" id="soapTemp">—</span></div>
+                  <div class="bg-white p-2 rounded border border-slate-200 text-center"><span class="text-[10px] text-slate-400 block">SpO2</span><span class="font-bold text-slate-800" id="soapSpO2">—</span></div>
                 </div>
-                <p class="text-slate-800 text-xs" id="soapObjectiveNotes">Lungs clear to auscultation bilaterally. Pharynx slightly erythematous without exudate.</p>
+                <p class="text-slate-800 text-xs" id="soapObjectiveNotes">—</p>
               </div>
               <!-- A -->
               <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
                 <span class="text-xs font-bold text-teal-700 uppercase tracking-wider block mb-1">Assessment (A) - Diagnosis</span>
-                <p class="font-semibold text-slate-900" id="soapAssessment">Acute upper respiratory tract infection (J06.9)</p>
+                <p class="font-semibold text-slate-900" id="soapAssessment">—</p>
               </div>
               <!-- P -->
               <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
                 <span class="text-xs font-bold text-teal-700 uppercase tracking-wider block mb-1">Plan (P) - Treatment & Rx</span>
-                <p class="text-slate-800" id="soapPlan">Rest, hydration, Acetaminophen 500mg PRN for fever. Follow-up in 5 days if symptoms persist.</p>
+                <p class="text-slate-800" id="soapPlan">—</p>
               </div>
             </div>
           </div>
@@ -560,12 +555,8 @@
               }
             </div>
             <div class="bg-slate-900 text-cyan-300 p-3 rounded-lg overflow-x-auto">
-              <div class="text-[10px] text-slate-400 mb-1">// Response (200 OK)</div>
-              {<br>
-              &nbsp;&nbsp;"access": "eyJhbGciOi...",<br>
-              &nbsp;&nbsp;"refresh": "eyJhbGciOi...",<br>
-              &nbsp;&nbsp;"user": { "id": 1, "email": "doctor@example.com" }<br>
-              }
+              <div class="text-[10px] text-slate-400 mb-1">// Response (200 OK); Django sets an HTTP-only session cookie</div>
+              { "user": { "id": 1, "email": "doctor@example.com" } }
             </div>
           </div>
         </div>
@@ -577,12 +568,12 @@
               <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800">GET / POST</span>
               <code class="text-sm font-bold text-slate-900">/api/v1/patients/</code>
             </div>
-            <span class="text-xs text-slate-500 font-medium">Milestone 2 (Tenant Scoped)</span>
+            <span class="text-xs text-slate-500 font-medium">Phase 3 (Tenant Scoped)</span>
           </div>
-          <p class="text-xs text-slate-600 mb-3">Lists and creates patients. <strong>Must be scoped to the active organization from JWT/Membership!</strong></p>
+          <p class="text-xs text-slate-600 mb-3">Lists, searches, and creates patients. Organization context comes from the selected clinic in the authenticated session; record IDs outside that clinic return not found.</p>
           <div class="bg-slate-900 text-amber-300 p-3 rounded-lg text-xs font-mono overflow-x-auto">
-            <div class="text-[10px] text-slate-400 mb-1">// Payload fields</div>
-            { "mrn": "MRN-10492", "first_name": "Jane", "last_name": "Doe", "dob": "1988-04-12", "phone": "555-0199", "status": "Active" }
+            <div class="text-[10px] text-slate-400 mb-1">// POST payload; organization comes from the selected session clinic</div>
+            { "first_name": "", "last_name": "", "date_of_birth": "YYYY-MM-DD", "gender": "female", "phone": "", "primary_doctor_id": null }
           </div>
         </div>
 
@@ -593,9 +584,9 @@
               <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800">GET / POST</span>
               <code class="text-sm font-bold text-slate-900">/api/v1/encounters/</code>
             </div>
-            <span class="text-xs text-slate-500 font-medium">Milestone 2 (SOAP Notes)</span>
+            <span class="text-xs text-slate-500 font-medium">Phase 3 (SOAP Notes)</span>
           </div>
-          <p class="text-xs text-slate-600 mb-3">Encounter CRUD containing structured clinical notes (Subjective, Objective, Assessment, Plan).</p>
+          <p class="text-xs text-slate-600 mb-3">Create, read, update, and delete structured SOAP encounters. Every patient and assigned doctor reference is validated against the selected clinic.</p>
         </div>
 
         <!-- Endpoint 4: Audit Log & Verify -->
@@ -636,7 +627,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Date of Birth</label>
-            <input type="date" id="patientDOB" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none" value="1992-05-18">
+            <input type="date" id="patientDOB" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Gender</label>
@@ -741,8 +732,7 @@
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Assign Provider</label>
           <select id="patientDoctor" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-            <option value="Dr. Sarah Chen, MD">Dr. Sarah Chen, MD (Doctor)</option>
-            <option value="Dr. Marcus Bell, DO">Dr. Marcus Bell, DO (Doctor)</option>
+            <option value="">Unassigned</option>
           </select>
         </div>
         <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
@@ -773,7 +763,9 @@
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Attending Provider</label>
-            <input type="text" value="Dr. Sarah Chen, MD" disabled class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-500">
+            <select id="encounterDoctorSelect" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
+              <option value="">Unassigned</option>
+            </select>
           </div>
         </div>
 
@@ -853,81 +845,25 @@
   <script>
     // Global State for ClinicOS
     const ClinicState = {
-      isLiveBackend: false, // false = Synthetic Mock Mode; true = calls Django REST endpoints
-      activeOrg: {
-        id: "org-8f92a",
-        name: "Memorial Outpatient Center",
-        plan: "pro",
-        slug: "memorial-outpatient"
-      },
+      isLiveBackend: true,
+      activeOrg: null,
+      memberships: [],
+      organizations: [],
+      activeRole: null,
       currentUser: {
-        name: "Dr. Sarah Chen, MD",
-        email: "admin@clinicos.local",
-        role: "Doctor"
+        name: "",
+        email: "",
+        role: "Member"
       },
-      patients: [
-        { id: 1, mrn: "MRN-10492", name: "Jane Doe", dob: "1988-04-12", gender: "Female", phone: "+1 (555) 019-2831", doctor: "Dr. Sarah Chen, MD", status: "Active" },
-        { id: 2, mrn: "MRN-10493", name: "Robert Taylor", dob: "1972-11-03", gender: "Male", phone: "+1 (555) 234-9982", doctor: "Dr. Marcus Bell, DO", status: "Active" },
-        { id: 3, mrn: "MRN-10494", name: "Elena Rostova", dob: "1995-09-24", gender: "Female", phone: "+1 (555) 441-3310", doctor: "Dr. Sarah Chen, MD", status: "Inpatient" },
-        { id: 4, mrn: "MRN-10495", name: "Marcus Brody", dob: "1960-01-15", gender: "Male", phone: "+1 (555) 872-9102", doctor: "Dr. Marcus Bell, DO", status: "Active" },
-        { id: 5, mrn: "MRN-10496", name: "Chloe Bennett", dob: "2001-08-30", gender: "Female", phone: "+1 (555) 671-5521", doctor: "Dr. Sarah Chen, MD", status: "Discharged" },
-        { id: 6, mrn: "MRN-10497", name: "David Kim", dob: "1984-06-19", gender: "Male", phone: "+1 (555) 902-1244", doctor: "Dr. Marcus Bell, DO", status: "Active" }
-      ],
-      encounters: [
-        {
-          id: "ENC-8812",
-          patientId: 1,
-          patientName: "Jane Doe (MRN-10492)",
-          doctor: "Dr. Sarah Chen, MD",
-          date: "2026-10-09 14:30",
-          complaint: "Persistent cough & fatigue (4 days)",
-          status: "Completed",
-          vitals: { bp: "122/78", hr: "76 bpm", temp: "37.8°C", spo2: "98%" },
-          objectiveNotes: "Lungs clear to auscultation bilaterally. Pharynx slightly erythematous without exudate.",
-          assessment: "Acute upper respiratory tract infection (J06.9)",
-          plan: "Rest, hydration, Acetaminophen 500mg PRN for fever. Follow-up in 5 days."
-        },
-        {
-          id: "ENC-8813",
-          patientId: 2,
-          patientName: "Robert Taylor (MRN-10493)",
-          doctor: "Dr. Marcus Bell, DO",
-          date: "2026-10-09 15:15",
-          complaint: "Routine 3-month Hypertension Review",
-          status: "In Progress",
-          vitals: { bp: "138/86", hr: "80 bpm", temp: "36.9°C", spo2: "99%" },
-          objectiveNotes: "Cardiovascular regular rate and rhythm. No peripheral edema noted.",
-          assessment: "Essential Hypertension - Suboptimally Controlled (I10)",
-          plan: "Adjust Lisinopril to 20mg daily. Re-check BP log in 4 weeks."
-        },
-        {
-          id: "ENC-8814",
-          patientId: 3,
-          patientName: "Elena Rostova (MRN-10494)",
-          doctor: "Dr. Sarah Chen, MD",
-          date: "2026-10-09 16:00",
-          complaint: "Post-op wound evaluation",
-          status: "Scheduled",
-          vitals: { bp: "118/74", hr: "68 bpm", temp: "36.7°C", spo2: "100%" },
-          objectiveNotes: "Incision clean, dry, and intact. Sutures well-approximated.",
-          assessment: "Routine surgical follow-up (Z48.81)",
-          plan: "Suture removal scheduled for next Monday. Continue wound care."
-        }
-      ],
+      patients: [],
+      encounters: [],
       team: [
         { email: "admin@clinicos.local", name: "Dr. Sarah Chen, MD", role: "Owner", joined: "2026-10-01" },
         { email: "marcus.bell@clinic.org", name: "Dr. Marcus Bell, DO", role: "Doctor", joined: "2026-10-02" },
         { email: "alicia.keys@clinic.org", name: "Alicia Rodriguez, RN", role: "Staff", joined: "2026-10-04" },
         { email: "compliance@auditors.org", name: "James Sterling", role: "Viewer", joined: "2026-10-05" }
       ],
-      auditChain: [
-        { block: 1, timestamp: "2026-10-09 09:12", actor: "system@bootstrap", event: "GENESIS_BLOCK", resource: "org-8f92a", hash: "0000a4b7e192c730", prevHash: "0000000000000000" },
-        { block: 2, timestamp: "2026-10-09 09:15", actor: "admin@clinicos.local", event: "ORG_CREATED", resource: "Memorial Outpatient", hash: "18e9f2a40cd319bc", prevHash: "0000a4b7e192c730" },
-        { block: 3, timestamp: "2026-10-09 10:04", actor: "admin@clinicos.local", event: "MEMBER_INVITED", resource: "marcus.bell@clinic.org", hash: "99cf1048bcae5210", prevHash: "18e9f2a40cd319bc" },
-        { block: 4, timestamp: "2026-10-09 11:20", actor: "marcus.bell@clinic.org", event: "PATIENT_CREATED", resource: "MRN-10492 (Jane Doe)", hash: "b218ad3349e8c071", prevHash: "99cf1048bcae5210" },
-        { block: 5, timestamp: "2026-10-09 14:35", actor: "admin@clinicos.local", event: "ENCOUNTER_SIGNED", resource: "ENC-8812 (Jane Doe)", hash: "740ad611f0ca9b22", prevHash: "b218ad3349e8c071" },
-        { block: 6, timestamp: "2026-10-09 15:20", actor: "marcus.bell@clinic.org", event: "ENCOUNTER_OPENED", resource: "ENC-8813 (Robert Taylor)", hash: "e34920b784a9c801", prevHash: "740ad611f0ca9b22" }
-      ]
+      auditChain: []
     };
 
     // Navigation View Switcher
@@ -957,6 +893,12 @@
       document.getElementById(id).classList.add('hidden');
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
+    }
+
     // Render Patients
     function renderPatients() {
       const tbody = document.getElementById('patientsTableBody');
@@ -964,26 +906,26 @@
       const statusFilter = document.getElementById('patientStatusFilter')?.value || 'ALL';
 
       const filtered = ClinicState.patients.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(search) || p.mrn.toLowerCase().includes(search) || p.phone.includes(search);
+        const matchesSearch = p.name.toLowerCase().includes(search) || p.mrn.toLowerCase().includes(search) || p.phone.toLowerCase().includes(search);
         const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
         return matchesSearch && matchesStatus;
       });
 
       document.getElementById('patientResultCount').innerText = `Showing ${filtered.length} patients`;
 
-      tbody.innerHTML = filtered.map(p => `
+      tbody.innerHTML = filtered.length ? filtered.map(p => `
         <tr class="hover:bg-slate-50 transition">
-          <td class="py-3 px-4 font-mono font-bold text-teal-700">${p.mrn}</td>
-          <td class="py-3 px-4 font-semibold text-slate-900">${p.name}</td>
-          <td class="py-3 px-4 text-slate-500">${p.dob} (${p.gender})</td>
-          <td class="py-3 px-4 text-slate-600 font-mono text-xs">${p.phone}</td>
-          <td class="py-3 px-4 text-slate-700">${p.doctor}</td>
+          <td class="py-3 px-4 font-mono font-bold text-teal-700">${escapeHtml(p.mrn)}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900">${escapeHtml(p.name)}</td>
+          <td class="py-3 px-4 text-slate-500">${escapeHtml(p.dob)} (${escapeHtml(p.gender)})</td>
+          <td class="py-3 px-4 text-slate-600 font-mono text-xs">${escapeHtml(p.phone)}</td>
+          <td class="py-3 px-4 text-slate-700">${escapeHtml(p.doctor || '—')}</td>
           <td class="py-3 px-4">
             <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${
               p.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
               p.status === 'Inpatient' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
               'bg-slate-100 text-slate-600'
-            }">${p.status}</span>
+            }">${escapeHtml(p.status)}</span>
           </td>
           <td class="py-3 px-4 text-right">
             <button onclick="startEncounterForPatient(${p.id})" class="text-xs font-semibold text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded border border-teal-200 transition">
@@ -991,63 +933,66 @@
             </button>
           </td>
         </tr>
-      `).join('');
+      `).join('') : '<tr><td colspan="7" class="py-8 text-center text-slate-500">No patients found in this organization.</td></tr>';
 
       // Also update patient dropdown in new encounter modal
       const encSelect = document.getElementById('encounterPatientSelect');
       if (encSelect) {
-        encSelect.innerHTML = ClinicState.patients.map(p => `<option value="${p.id}">${p.name} (${p.mrn})</option>`).join('');
+        encSelect.innerHTML = ClinicState.patients.length
+          ? ClinicState.patients.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${escapeHtml(p.mrn)})</option>`).join('')
+          : '<option value="">Register a patient first</option>';
       }
     }
 
     // Render Dashboard Today Schedule Table
     function renderDashboardSchedule() {
       const tbody = document.getElementById('todayScheduleTableBody');
-      tbody.innerHTML = ClinicState.encounters.map(enc => `
+      tbody.innerHTML = ClinicState.encounters.length ? ClinicState.encounters.map(enc => `
         <tr class="hover:bg-slate-50 transition">
-          <td class="py-2.5 px-3 font-mono text-xs text-slate-500">${enc.date.split(' ')[1]}</td>
-          <td class="py-2.5 px-3 font-semibold text-slate-900">${enc.patientName}</td>
-          <td class="py-2.5 px-3 text-slate-600">${enc.complaint}</td>
-          <td class="py-2.5 px-3 text-slate-700">${enc.doctor}</td>
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-500">${escapeHtml(new Date(enc.date).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}))}</td>
+          <td class="py-2.5 px-3 font-semibold text-slate-900">${escapeHtml(enc.patientName)}</td>
+          <td class="py-2.5 px-3 text-slate-600">${escapeHtml(enc.complaint)}</td>
+          <td class="py-2.5 px-3 text-slate-700">${escapeHtml(enc.doctor)}</td>
           <td class="py-2.5 px-3">
             <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${
               enc.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' :
               enc.status === 'In Progress' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
-            }">${enc.status}</span>
+            }">${escapeHtml(enc.status)}</span>
           </td>
           <td class="py-2.5 px-3 text-right">
-            <button onclick="loadSoapNote('${enc.id}')" class="text-xs font-semibold text-teal-600 hover:text-teal-800">Review Note &rarr;</button>
+            <button onclick="loadSoapNote(${enc.id})" class="text-xs font-semibold text-teal-600 hover:text-teal-800">Review Note &rarr;</button>
           </td>
         </tr>
-      `).join('');
+      `).join('') : '<tr><td colspan="6" class="py-8 text-center text-slate-500">No encounters are recorded for this organization.</td></tr>';
     }
 
     // Render Encounters Tab Sidebar
     function renderEncountersSidebar() {
       const sidebar = document.getElementById('encountersListSidebar');
-      sidebar.innerHTML = ClinicState.encounters.map(enc => `
-        <div onclick="loadSoapNote('${enc.id}')" class="p-3 rounded-lg border border-slate-200 hover:border-teal-500 hover:bg-teal-50/30 cursor-pointer transition text-xs">
+      sidebar.innerHTML = ClinicState.encounters.length ? ClinicState.encounters.map(enc => `
+        <div onclick="loadSoapNote(${enc.id})" class="p-3 rounded-lg border border-slate-200 hover:border-teal-500 hover:bg-teal-50/30 cursor-pointer transition text-xs">
           <div class="flex justify-between items-center mb-1">
-            <span class="font-mono font-bold text-teal-700">${enc.id}</span>
-            <span class="text-[10px] text-slate-400">${enc.date}</span>
+            <span class="font-mono font-bold text-teal-700">${escapeHtml(enc.displayId)}</span>
+            <span class="text-[10px] text-slate-400">${escapeHtml(new Date(enc.date).toLocaleString())}</span>
           </div>
-          <p class="font-bold text-slate-900">${enc.patientName}</p>
-          <p class="text-slate-500 truncate mt-0.5">${enc.complaint}</p>
+          <p class="font-bold text-slate-900">${escapeHtml(enc.patientName)}</p>
+          <p class="text-slate-500 truncate mt-0.5">${escapeHtml(enc.complaint)}</p>
           <div class="mt-2 flex justify-between items-center">
-            <span class="text-[10px] text-slate-600">${enc.doctor}</span>
+            <span class="text-[10px] text-slate-600">${escapeHtml(enc.doctor)}</span>
             <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded ${
               enc.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
-            }">${enc.status}</span>
+            }">${escapeHtml(enc.status)}</span>
           </div>
         </div>
-      `).join('');
+      `).join('') : '<p class="p-3 text-xs text-slate-500">No encounters yet.</p>';
     }
 
     // Load SOAP Note into viewer
-    function loadSoapNote(encId) {
-      const enc = ClinicState.encounters.find(e => e.id === encId) || ClinicState.encounters[0];
-      document.getElementById('soapEncounterId').innerText = enc.id;
-      document.getElementById('soapDate').innerText = enc.date;
+    function loadSoapNote(encId, shouldSwitch = true) {
+      const enc = ClinicState.encounters.find(e => String(e.id) === String(encId));
+      if (!enc) return;
+      document.getElementById('soapEncounterId').innerText = enc.displayId;
+      document.getElementById('soapDate').innerText = new Date(enc.date).toLocaleString();
       document.getElementById('soapStatus').innerText = enc.status;
       document.getElementById('soapPatientName').innerText = enc.patientName;
       document.getElementById('soapDoctor').innerText = enc.doctor;
@@ -1059,12 +1004,16 @@
       document.getElementById('soapObjectiveNotes').innerText = enc.objectiveNotes;
       document.getElementById('soapAssessment').innerText = enc.assessment;
       document.getElementById('soapPlan').innerText = enc.plan;
-      switchView('encounters');
+      if (shouldSwitch) switchView('encounters');
     }
 
     // Render Quick Audit Feed on Dashboard
     function renderQuickAudit() {
       const feed = document.getElementById('quickAuditFeed');
+      if (!ClinicState.auditChain.length) {
+        feed.innerHTML = '<p class="text-xs text-slate-500">Persistent audit logging is planned for a later phase.</p>';
+        return;
+      }
       feed.innerHTML = ClinicState.auditChain.slice(-4).reverse().map(entry => `
         <div class="text-xs border-l-2 border-teal-500 pl-2.5 py-0.5">
           <div class="flex justify-between text-[11px] text-slate-400">
@@ -1080,6 +1029,10 @@
     // Render Full Audit Ledger Table
     function renderAuditTable() {
       const tbody = document.getElementById('auditLedgerTableBody');
+      if (!ClinicState.auditChain.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No persistent audit records are available yet.</td></tr>';
+        return;
+      }
       tbody.innerHTML = ClinicState.auditChain.map(b => `
         <tr class="hover:bg-slate-50">
           <td class="py-2.5 px-3 font-bold text-teal-700">#${b.block}</td>
@@ -1118,6 +1071,10 @@
 
     // Audit Chain Integrity Verification
     function verifyAuditChain() {
+      if (!ClinicState.auditChain.length) {
+        alert('Persistent audit logging is not implemented yet.');
+        return;
+      }
       const banner = document.getElementById('auditVerifyBanner');
       banner.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-between animate-pulse';
       setTimeout(() => {
@@ -1126,105 +1083,169 @@
       }, 400);
     }
 
-    // Toggle Backend Mode (Mock vs Live Django REST API)
-    document.getElementById('toggleDataSourceBtn').addEventListener('click', () => {
-      ClinicState.isLiveBackend = !ClinicState.isLiveBackend;
-      const dot = document.getElementById('dataSourceDot');
-      const label = document.getElementById('dataSourceLabel');
-      const btn = document.getElementById('toggleDataSourceBtn');
-
-      if (ClinicState.isLiveBackend) {
-        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-ping';
-        label.innerText = 'Mode: Live Django REST API';
-        btn.className = 'flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full border transition border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100';
-        alert("Switched to Live Django API Mode!\n\nRequests will now hit your Django REST endpoints (/api/v1/...). Inspect the 'Backend API Guide' tab to build these endpoints!");
-      } else {
-        dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
-        label.innerText = 'Mode: Mock Synthetic Data';
-        btn.className = 'flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full border transition border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100';
+    async function apiRequest(path, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = new Headers(options.headers || {});
+      if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+        if (!getCookie('csrftoken')) await fetch('/api/v1/auth/csrf/', {credentials: 'same-origin'});
+        headers.set('X-CSRFToken', getCookie('csrftoken') || '');
       }
-    });
+      const response = await fetch(path, {...options, method, headers, credentials: 'same-origin'});
+      if (response.status === 204) return null;
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error?.message || 'The request failed.');
+      return payload;
+    }
 
-    // Form Submissions
-    document.getElementById('newPatientForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const newP = {
-        id: ClinicState.patients.length + 1,
-        mrn: `MRN-${10492 + ClinicState.patients.length}`,
-        name: `${document.getElementById('patientFirstName').value} ${document.getElementById('patientLastName').value}`,
-        dob: document.getElementById('patientDOB').value,
-        gender: document.getElementById('patientGender').value,
-        phone: `${document.getElementById('patientPhoneCountryCode').value.trim()} ${document.getElementById('patientPhoneNumber').value.trim()}`,
-        doctor: document.getElementById('patientDoctor').value,
-        status: "Active"
-      };
-      ClinicState.patients.unshift(newP);
-      
-      // Add audit entry
-      ClinicState.auditChain.push({
-        block: ClinicState.auditChain.length + 1,
-        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
-        actor: ClinicState.currentUser.email,
-        event: "PATIENT_CREATED",
-        resource: `${newP.mrn} (${newP.name})`,
-        hash: Math.random().toString(16).substring(2, 18),
-        prevHash: ClinicState.auditChain[ClinicState.auditChain.length - 1].hash
-      });
+    async function fetchAllPages(path) {
+      const rows = [];
+      let next = path;
+      while (next) {
+        const page = await apiRequest(next);
+        rows.push(...page.results);
+        next = page.next ? new URL(page.next, window.location.origin).pathname + new URL(page.next, window.location.origin).search : null;
+      }
+      return rows;
+    }
 
-      closeModal('newPatientModal');
-      document.getElementById('newPatientForm').reset();
-      renderPatients();
-      renderQuickAudit();
-      renderAuditTable();
+    function titleCase(value) {
+      return String(value || '').replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+    }
+
+    function updateClinicalStats() {
       document.getElementById('statPatientsCount').innerText = ClinicState.patients.length;
-      alert(`Patient ${newP.name} successfully registered with ${newP.mrn}!`);
-    });
+      document.getElementById('statEncountersCount').innerText = ClinicState.encounters.length;
+      document.getElementById('patientResultCount').innerText = `Showing ${ClinicState.patients.length} patients`;
+    }
 
-    document.getElementById('newEncounterForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const patientId = parseInt(document.getElementById('encounterPatientSelect').value);
-      const patient = ClinicState.patients.find(p => p.id === patientId) || ClinicState.patients[0];
-
-      const newEnc = {
-        id: `ENC-${8815 + ClinicState.encounters.length}`,
-        patientId: patient.id,
-        patientName: `${patient.name} (${patient.mrn})`,
-        doctor: ClinicState.currentUser.name,
-        date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-        complaint: document.getElementById('encSubjective').value,
-        status: "Completed",
-        vitals: {
-          bp: document.getElementById('encBP').value || "120/80",
-          hr: document.getElementById('encHR').value || "72 bpm",
-          temp: document.getElementById('encTemp').value || "37.0°C",
-          spo2: document.getElementById('encSpO2').value || "99%"
-        },
-        objectiveNotes: document.getElementById('encObjective').value || "Physical examination completed.",
-        assessment: document.getElementById('encAssessment').value,
-        plan: document.getElementById('encPlan').value
-      };
-
-      ClinicState.encounters.unshift(newEnc);
-
-      // Add audit entry
-      ClinicState.auditChain.push({
-        block: ClinicState.auditChain.length + 1,
-        timestamp: newEnc.date,
-        actor: ClinicState.currentUser.email,
-        event: "ENCOUNTER_SIGNED",
-        resource: `${newEnc.id} (${newEnc.patientName})`,
-        hash: Math.random().toString(16).substring(2, 18),
-        prevHash: ClinicState.auditChain[ClinicState.auditChain.length - 1].hash
-      });
-
-      closeModal('newEncounterModal');
-      document.getElementById('newEncounterForm').reset();
+    function renderClinicalData() {
+      renderPatients();
+      applyRoleControls();
       renderDashboardSchedule();
       renderEncountersSidebar();
-      renderQuickAudit();
-      renderAuditTable();
-      loadSoapNote(newEnc.id);
-      alert(`Encounter ${newEnc.id} signed and cryptographically committed to audit ledger!`);
+      updateClinicalStats();
+      const first = ClinicState.encounters[0];
+      if (first) {
+        loadSoapNote(first.id, false);
+      } else {
+        ['soapEncounterId', 'soapDate', 'soapStatus', 'soapDoctor', 'soapSubjective',
+          'soapBP', 'soapHR', 'soapTemp', 'soapSpO2', 'soapObjectiveNotes', 'soapAssessment', 'soapPlan']
+          .forEach(id => { document.getElementById(id).innerText = '—'; });
+        document.getElementById('soapPatientName').innerText = 'No encounter selected';
+      }
+    }
+
+    async function loadClinicalData() {
+      if (!ClinicState.activeOrg) {
+        ClinicState.patients = [];
+        ClinicState.encounters = [];
+        renderClinicalData();
+        return;
+      }
+      const [patients, encounters] = await Promise.all([
+        fetchAllPages('/api/v1/patients/?page_size=100'),
+        fetchAllPages('/api/v1/encounters/?page_size=100')
+      ]);
+      ClinicState.patients = patients.map(patient => ({
+        id: patient.id,
+        mrn: patient.mrn,
+        name: `${patient.first_name} ${patient.last_name}`.trim(),
+        dob: patient.date_of_birth,
+        gender: titleCase(patient.gender),
+        phone: patient.phone,
+        doctor: patient.primary_doctor_name,
+        status: titleCase(patient.status)
+      }));
+      ClinicState.encounters = encounters.map(encounter => {
+        const patient = encounter.patient;
+        const author = encounter.assigned_doctor || encounter.created_by;
+        return {
+          id: encounter.id,
+          displayId: `ENC-${encounter.id}`,
+          patientId: patient.id,
+          patientName: `${patient.full_name} (${patient.mrn})`,
+          doctor: [author?.first_name, author?.last_name].filter(Boolean).join(' ') || author?.email || '—',
+          date: encounter.occurred_at,
+          complaint: encounter.chief_complaint,
+          status: titleCase(encounter.status),
+          vitals: {bp: encounter.blood_pressure || '—', hr: encounter.heart_rate || '—',
+            temp: encounter.temperature || '—', spo2: encounter.oxygen_saturation || '—'},
+          objectiveNotes: encounter.objective_notes || '—',
+          assessment: encounter.assessment || '—',
+          plan: encounter.plan || '—'
+        };
+      });
+      renderClinicalData();
+    }
+
+    async function loadPatientDoctors() {
+      const select = document.getElementById('patientDoctor');
+      const encounterSelect = document.getElementById('encounterDoctorSelect');
+      if (!ClinicState.activeOrg) return;
+      const members = await apiRequest(`/api/v1/organizations/${ClinicState.activeOrg.id}/members/`);
+      const doctors = members.filter(member => member.role === 'doctor');
+      const optionMarkup = doctors.map(member => {
+        const user = member.user;
+        const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email;
+        return `<option value="${user.id}">${escapeHtml(name)} (${escapeHtml(user.email)})</option>`;
+      }).join('');
+      select.innerHTML = `<option value="">Unassigned</option>${optionMarkup}`;
+      encounterSelect.innerHTML = `<option value="">Unassigned</option>${optionMarkup}`;
+      if (ClinicState.activeRole === 'doctor') {
+        select.value = String(ClinicState.currentUser.id);
+        encounterSelect.value = String(ClinicState.currentUser.id);
+      }
+    }
+
+    // Clinical form submissions create persistent, organization-scoped records.
+    document.getElementById('newPatientForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      try {
+        const phone = `${document.getElementById('patientPhoneCountryCode').value.trim()} ${document.getElementById('patientPhoneNumber').value.trim()}`.trim();
+        await apiRequest('/api/v1/patients/', {method: 'POST', body: JSON.stringify({
+          first_name: document.getElementById('patientFirstName').value.trim(),
+          last_name: document.getElementById('patientLastName').value.trim(),
+          date_of_birth: document.getElementById('patientDOB').value,
+          gender: document.getElementById('patientGender').value.toLowerCase(),
+          phone,
+          primary_doctor_id: document.getElementById('patientDoctor').value || null
+        })});
+        closeModal('newPatientModal');
+        form.reset();
+        if (ClinicState.activeRole === 'doctor') {
+          document.getElementById('patientDoctor').value = String(ClinicState.currentUser.id);
+        }
+        await loadClinicalData();
+      } catch (error) { alert(error.message); }
+    });
+
+    document.getElementById('newEncounterForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      try {
+        await apiRequest('/api/v1/encounters/', {method: 'POST', body: JSON.stringify({
+          patient_id: Number(document.getElementById('encounterPatientSelect').value),
+          assigned_doctor_id: document.getElementById('encounterDoctorSelect').value || null,
+          chief_complaint: document.getElementById('encSubjective').value.trim(),
+          blood_pressure: document.getElementById('encBP').value.trim(),
+          heart_rate: document.getElementById('encHR').value.trim(),
+          temperature: document.getElementById('encTemp').value.trim(),
+          oxygen_saturation: document.getElementById('encSpO2').value.trim(),
+          objective_notes: document.getElementById('encObjective').value.trim(),
+          assessment: document.getElementById('encAssessment').value.trim(),
+          plan: document.getElementById('encPlan').value.trim(),
+          status: 'completed'
+        })});
+        closeModal('newEncounterModal');
+        form.reset();
+        if (ClinicState.activeRole === 'doctor') {
+          document.getElementById('encounterDoctorSelect').value = String(ClinicState.currentUser.id);
+        }
+        await loadClinicalData();
+        if (ClinicState.encounters[0]) loadSoapNote(ClinicState.encounters[0].id);
+      } catch (error) { alert(error.message); }
     });
 
     document.getElementById('inviteMemberForm').addEventListener('submit', (e) => {
@@ -1237,17 +1258,6 @@
         email, name,
         role: role.charAt(0).toUpperCase() + role.slice(1),
         joined: new Date().toISOString().substring(0, 10)
-      });
-
-      // Add audit entry
-      ClinicState.auditChain.push({
-        block: ClinicState.auditChain.length + 1,
-        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
-        actor: ClinicState.currentUser.email,
-        event: "MEMBER_INVITED",
-        resource: `${email} (${role})`,
-        hash: Math.random().toString(16).substring(2, 18),
-        prevHash: ClinicState.auditChain[ClinicState.auditChain.length - 1].hash
       });
 
       closeModal('inviteMemberModal');
@@ -1283,41 +1293,91 @@
       return cookieValue;
     }
 
-    // Hydrate Authenticated User Session from GET /api/auth/me/
+    function applyRoleControls() {
+      const canManagePatients = ['owner', 'admin', 'doctor'].includes(ClinicState.activeRole);
+      const canManageEncounters = ['owner', 'admin', 'doctor'].includes(ClinicState.activeRole);
+      document.querySelectorAll("button[onclick=\"openModal('newPatientModal')\"]")
+        .forEach(button => { button.hidden = !canManagePatients; });
+      document.querySelectorAll("button[onclick=\"openModal('newEncounterModal')\"]")
+        .forEach(button => { button.hidden = !canManageEncounters || ClinicState.patients.length === 0; });
+      document.querySelectorAll('#patientsTableBody button').forEach(button => {
+        button.hidden = !canManageEncounters;
+      });
+    }
+
+    async function activateOrganization(organizationId) {
+      if (!organizationId) return;
+      const membership = await apiRequest('/api/v1/organizations/selection/', {
+        method: 'PUT', body: JSON.stringify({organization_id: Number(organizationId)})
+      });
+      ClinicState.activeOrg = ClinicState.organizations.find(org => org.id === membership.organization_id) || null;
+      ClinicState.activeRole = membership.role;
+      document.getElementById('tenantSubhead').textContent = ClinicState.activeOrg?.name || membership.organization_name;
+      document.getElementById('currentUserRole').textContent = titleCase(membership.role);
+      applyRoleControls();
+      await Promise.all([loadPatientDoctors(), loadClinicalData()]);
+    }
+
+    // Hydrate account and active clinic from the authenticated API session.
     async function hydrateCurrentUser() {
       try {
-        const res = await fetch('/api/auth/me/', {
-          method: 'GET',
-          credentials: 'same-origin'
-        });
-        if (res.ok) {
-          const user = await res.json();
-          const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.email.split('@')[0];
-          const initials = fullName
-            .replace(/^Dr\.\s*/i, '')
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(part => part[0].toUpperCase())
-            .join('') || 'CL';
+        const user = await apiRequest('/api/v1/auth/me/');
+        const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.email.split('@')[0];
+        const initials = fullName.replace(/^Dr\.\s*/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
+          .map(part => part[0].toUpperCase()).join('') || 'CL';
+        ClinicState.currentUser = {id: user.id, name: fullName, email: user.email, role: 'Member'};
+        ClinicState.memberships = user.memberships || [];
+        document.getElementById('currentUserName').textContent = fullName;
+        document.getElementById('currentUserEmail').textContent = user.email;
+        document.getElementById('currentUserInitials').textContent = initials;
 
-          ClinicState.currentUser = {
-            id: user.id,
-            name: fullName,
-            email: user.email,
-            role: 'Clinician'
-          };
-
-          document.getElementById('currentUserName').textContent = fullName;
-          document.getElementById('currentUserEmail').textContent = user.email;
-          document.getElementById('currentUserInitials').textContent = initials;
-        } else {
-          // Running in Demo Sandbox mode (?demo=1) without an active session
-          const label = document.getElementById('authActionLabel');
-          if (label) label.textContent = 'Sign In';
+        ClinicState.organizations = await apiRequest('/api/v1/organizations/');
+        const selector = document.getElementById('activeOrgSelector');
+        const activeId = user.active_organization?.organization_id;
+        selector.innerHTML = '<option value="">Choose an organization</option>' + ClinicState.organizations
+          .map(org => `<option value="${org.id}">${escapeHtml(org.name)}</option>`).join('');
+        selector.disabled = ClinicState.organizations.length === 0;
+        if (!ClinicState.organizations.length) {
+          selector.innerHTML = '<option value="">No clinic yet</option>';
+          const createButton = document.createElement('button');
+          createButton.type = 'button';
+          createButton.id = 'createClinicButton';
+          createButton.className = 'ml-2 px-3 py-2 text-xs font-semibold text-teal-700 border border-teal-200 rounded-lg hover:bg-teal-50';
+          createButton.textContent = 'Create clinic';
+          selector.parentElement.appendChild(createButton);
+          createButton.addEventListener('click', async () => {
+            const name = prompt('Clinic name');
+            if (!name?.trim()) return;
+            const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            try {
+              await apiRequest('/api/v1/organizations/', {method: 'POST', body: JSON.stringify({name: name.trim(), slug})});
+              await hydrateCurrentUser();
+            } catch (error) { alert(error.message); }
+          });
         }
-      } catch (err) {
-        // Ignore network errors in offline/mock mode
+        if (ClinicState.organizations.length) document.getElementById('createClinicButton')?.remove();
+        selector.onchange = async () => {
+          try { await activateOrganization(selector.value); }
+          catch (error) { alert(error.message); }
+        };
+
+        if (activeId && ClinicState.organizations.some(org => org.id === activeId)) {
+          selector.value = String(activeId);
+          await activateOrganization(activeId);
+        } else if (ClinicState.organizations.length === 1) {
+          selector.value = String(ClinicState.organizations[0].id);
+          await activateOrganization(selector.value);
+        } else {
+          ClinicState.activeOrg = null;
+          ClinicState.activeRole = null;
+          document.getElementById('tenantSubhead').textContent = 'Choose an organization to load clinic data';
+          applyRoleControls();
+          renderClinicalData();
+        }
+      } catch (error) {
+        const label = document.getElementById('authActionLabel');
+        if (label) label.textContent = 'Sign In';
+        document.getElementById('tenantSubhead').textContent = error.message || 'Sign in to view clinic data';
       }
     }
 
@@ -1342,9 +1402,6 @@
 
     // Initial Render
     hydrateCurrentUser();
-    renderPatients();
-    renderDashboardSchedule();
-    renderEncountersSidebar();
     renderQuickAudit();
     renderAuditTable();
     renderTeam();
