@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Membership, Organization, User
+from .models import Encounter, Membership, Organization, OrganizationInvitation, Patient, User, UserProfile
 
 
 @admin.register(User)
@@ -16,3 +16,7 @@ class ClinicUserAdmin(UserAdmin):
 
 admin.site.register(Organization)
 admin.site.register(Membership)
+admin.site.register(UserProfile)
+admin.site.register(OrganizationInvitation)
+admin.site.register(Patient)
+admin.site.register(Encounter)

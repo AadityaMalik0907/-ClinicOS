@@ -9,7 +9,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import LoginSerializer, PublicUserSerializer, RegistrationSerializer
+from .models import Membership, UserProfile
+from .serializers import (
+    LoginSerializer,
+    MembershipSerializer,
+    PublicUserSerializer,
+    RegistrationSerializer,
+    UserProfileSerializer,
+)
 
 
 @ensure_csrf_cookie
@@ -53,7 +60,12 @@ class LoginView(APIView):
         )
         if user is None:
             return Response(
-                {"detail": "Invalid email or password."},
+                {
+                    "error": {
+                        "code": "validation_error",
+                        "message": "Invalid email or password.",
+                    }
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         login(request, user)
@@ -75,4 +87,14 @@ class CurrentUserView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        return Response(PublicUserSerializer(request.user).data)
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        memberships = Membership.objects.filter(user=request.user).select_related("organization")
+        data = PublicUserSerializer(request.user).data
+        data["profile"] = UserProfileSerializer(profile).data
+        data["memberships"] = MembershipSerializer(memberships, many=True).data
+        active_organization_id = request.session.get("active_organization_id")
+        active_membership = memberships.filter(organization_id=active_organization_id).first()
+        data["active_organization"] = (
+            MembershipSerializer(active_membership).data if active_membership else None
+        )
+        return Response(data)
