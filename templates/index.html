@@ -132,9 +132,9 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
             <span>Team & RBAC</span>
           </button>
-          <button class="nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition" data-view="audit">
+          <button id="auditNavTab" class="nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition" data-view="audit">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-            <span>Tamper-Proof Audit Log</span>
+            <span>Audit Ledger</span>
           </button>
           <button class="nav-tab px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-2 transition text-indigo-700 bg-indigo-50/50" data-view="apiContract">
             <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
@@ -174,7 +174,7 @@
         <!-- Metric 1: Patients -->
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Patients</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Patients</span>
             <span class="p-2 bg-teal-50 text-teal-600 rounded-lg">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7 7z"></path></svg>
             </span>
@@ -183,7 +183,7 @@
             <span class="text-3xl font-extrabold text-slate-900" id="statPatientsCount">0</span>
             <span class="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full">From selected clinic</span>
           </div>
-          <p class="text-xs text-slate-400 mt-2">Strict tenant isolation active</p>
+          <p class="text-xs text-slate-400 mt-2">Records scoped to the selected clinic</p>
         </div>
 
         <!-- Metric 2: Today's Encounters -->
@@ -204,21 +204,21 @@
         <!-- Metric 3: Plan Quota Meter -->
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Plan Quota (Pro)</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Clinic Plan</span>
             <span class="p-2 bg-purple-50 text-purple-600 rounded-lg">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             </span>
           </div>
           <div class="mt-3">
             <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
-              <span>Patient Capacity</span>
-              <span>Usage limits are not implemented</span>
+              <span id="planLabel">Loading usage…</span>
+              <span id="patientUsageLabel">—</span>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-2">
-              <div class="bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
+              <div id="patientUsageBar" class="bg-purple-600 h-2 rounded-full transition-all" style="width: 0%"></div>
             </div>
           </div>
-          <p class="text-xs text-slate-400 mt-2">Metering & rate limits enforced</p>
+          <p id="encounterUsageLabel" class="text-xs text-slate-400 mt-2">Usage resets monthly</p>
         </div>
 
         <!-- Metric 4: Hash-Chain Security -->
@@ -230,10 +230,10 @@
             </span>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
-            <span class="text-xl font-bold text-slate-500">Not available</span>
-            <span class="text-xs font-mono bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-200">Audit phase pending</span>
+            <span id="auditSummaryStatus" class="text-xl font-bold text-slate-500">Not checked</span>
+            <span class="text-xs font-mono bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-200">SHA-256 chain</span>
           </div>
-          <p class="text-xs text-slate-400 mt-2">Audit logging has not been implemented</p>
+          <p class="text-xs text-slate-400 mt-2">Owners and admins can verify the active clinic ledger</p>
         </div>
       </div>
 
@@ -280,7 +280,7 @@
             </div>
           </div>
           <div class="mt-4 pt-3 border-t border-slate-100">
-            <button onclick="switchView('audit')" class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg text-center transition flex items-center justify-center space-x-1.5">
+            <button id="auditDashboardButton" onclick="switchView('audit')" class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg text-center transition flex items-center justify-center space-x-1.5">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
               <span>Inspect Full Cryptographic Ledger</span>
             </button>
@@ -320,7 +320,7 @@
             <option value="Inpatient">Inpatient</option>
             <option value="Discharged">Discharged</option>
           </select>
-          <span class="text-xs text-slate-400" id="patientResultCount">Showing 6 patients</span>
+        <span class="text-xs text-slate-400" id="patientResultCount">Loading patients…</span>
         </div>
       </div>
 
@@ -387,7 +387,7 @@
                 <h3 class="text-lg font-bold text-slate-900 mt-2" id="soapPatientName">No encounter selected</h3>
                 <p class="text-xs text-slate-500">Provider: <strong class="text-slate-700" id="soapDoctor">—</strong></p>
               </div>
-              <button onclick="alert('Print / Export PDF feature ready for backend integration')" class="text-xs text-slate-600 border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+              <button onclick="printSoapNote()" class="text-xs text-slate-600 border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 <span>Export Note</span>
               </button>
@@ -443,7 +443,7 @@
 
       <!-- Role Permission Matrix Reference -->
       <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 text-xs">
-        <h4 class="font-bold text-slate-800 mb-1">Central RBAC Permission Map (Planned Milestone 3)</h4>
+        <h4 class="font-bold text-slate-800 mb-1">Organization role capabilities</h4>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-slate-600 mt-2">
           <div class="bg-white p-2 rounded border border-slate-200"><span class="font-bold text-purple-700">OWNER:</span> Full tenant billing, org destroy, invites</div>
           <div class="bg-white p-2 rounded border border-slate-200"><span class="font-bold text-indigo-700">ADMIN:</span> Team invites, audit review, clinic settings</div>
@@ -478,7 +478,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
         <div>
           <h2 class="text-xl font-bold text-slate-900">Hash-Chained Audit Ledger</h2>
-          <p class="text-xs text-slate-500">Append-only cryptographic audit stream. Every entry stores <code>SHA-256(previous_hash + payload)</code>.</p>
+          <p class="text-xs text-slate-500">Append-only audit entries are linked by SHA-256 hashes and checked against the stored chain.</p>
         </div>
         <button onclick="verifyAuditChain()" class="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-4 py-2 rounded-lg shadow-sm transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
@@ -487,15 +487,15 @@
       </div>
 
       <!-- Verification Status Banner -->
-      <div id="auditVerifyBanner" class="p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-between">
+      <div id="auditVerifyBanner" class="p-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">✓</div>
+          <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold">?</div>
           <div>
-            <p class="text-sm font-bold">Chain Integrity Verified: 6 of 6 Blocks Valid</p>
-            <p class="text-xs text-emerald-700">Root genesis hash matches. No historical records have been modified or deleted.</p>
+            <p class="text-sm font-bold" data-audit-status>Audit chain has not been checked yet</p>
+            <p class="text-xs text-emerald-700" data-audit-detail>Run verification to validate this clinic’s stored entries.</p>
           </div>
         </div>
-        <span class="text-xs font-mono font-bold bg-white text-emerald-800 px-3 py-1 rounded border border-emerald-300">GENESIS: 0000a4b7...</span>
+        <span class="text-xs font-mono font-bold bg-white text-emerald-800 px-3 py-1 rounded border border-emerald-300">SHA-256 CHAIN</span>
       </div>
 
       <!-- Audit Entries Table -->
@@ -820,10 +820,6 @@
           <input type="email" id="inviteEmail" required placeholder="colleague@clinic.com" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
         </div>
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Full Name</label>
-          <input type="text" id="inviteName" required placeholder="Dr. Gregory House" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
-        </div>
-        <div>
           <label class="block font-semibold text-slate-700 mb-1">Assigned Role</label>
           <select id="inviteRole" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
             <option value="doctor">Doctor (Clinical note sign-off)</option>
@@ -832,6 +828,7 @@
             <option value="viewer">Viewer (Read-only)</option>
           </select>
         </div>
+        <p id="inviteStatus" role="status" class="min-h-4 text-rose-700"></p>
         <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
           <button type="button" onclick="closeModal('inviteMemberModal')" class="px-4 py-2 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
           <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold shadow-sm">Send Invitation</button>
@@ -857,12 +854,7 @@
       },
       patients: [],
       encounters: [],
-      team: [
-        { email: "admin@clinicos.local", name: "Dr. Sarah Chen, MD", role: "Owner", joined: "2026-10-01" },
-        { email: "marcus.bell@clinic.org", name: "Dr. Marcus Bell, DO", role: "Doctor", joined: "2026-10-02" },
-        { email: "alicia.keys@clinic.org", name: "Alicia Rodriguez, RN", role: "Staff", joined: "2026-10-04" },
-        { email: "compliance@auditors.org", name: "James Sterling", role: "Viewer", joined: "2026-10-05" }
-      ],
+      team: [],
       auditChain: []
     };
 
@@ -1007,21 +999,47 @@
       if (shouldSwitch) switchView('encounters');
     }
 
+    function printSoapNote() {
+      const printWindow = window.open('', '_blank', 'width=900,height=700');
+      if (!printWindow) {
+        window.alert('Allow pop-ups to print this encounter note.');
+        return;
+      }
+      const fields = [
+        ['Patient', document.getElementById('soapPatientName').textContent],
+        ['Encounter', document.getElementById('soapEncounterId').textContent],
+        ['Date', document.getElementById('soapDate').textContent],
+        ['Provider', document.getElementById('soapDoctor').textContent],
+        ['Status', document.getElementById('soapStatus').textContent],
+        ['Subjective', document.getElementById('soapSubjective').textContent],
+        ['Blood pressure', document.getElementById('soapBP').textContent],
+        ['Heart rate', document.getElementById('soapHR').textContent],
+        ['Temperature', document.getElementById('soapTemp').textContent],
+        ['Oxygen saturation', document.getElementById('soapSpO2').textContent],
+        ['Objective notes', document.getElementById('soapObjectiveNotes').textContent],
+        ['Assessment', document.getElementById('soapAssessment').textContent],
+        ['Plan', document.getElementById('soapPlan').textContent]
+      ];
+      const rows = fields.map(([label, value]) => `<section><h2>${escapeHtml(label)}</h2><p>${escapeHtml(value)}</p></section>`).join('');
+      printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>ClinicOS encounter note</title><style>body{font:15px/1.5 system-ui,sans-serif;color:#0f172a;max-width:800px;margin:40px auto;padding:0 24px}header{border-bottom:2px solid #0f766e;margin-bottom:24px}h1{font-size:24px}h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#0f766e;margin:0 0 4px}p{margin:0;white-space:pre-wrap}section{padding:14px 0;border-bottom:1px solid #e2e8f0}@media print{body{margin:16mm auto}}</style></head><body><header><h1>ClinicOS · ${escapeHtml(ClinicState.activeOrg?.name || 'Clinic')}</h1><p>Clinical encounter note</p></header>${rows}<script>window.addEventListener('load',()=>{window.focus();window.print()})<\/script></body></html>`);
+      printWindow.document.close();
+    }
+
     // Render Quick Audit Feed on Dashboard
     function renderQuickAudit() {
       const feed = document.getElementById('quickAuditFeed');
       if (!ClinicState.auditChain.length) {
-        feed.innerHTML = '<p class="text-xs text-slate-500">Persistent audit logging is planned for a later phase.</p>';
+        feed.innerHTML = '<p class="text-xs text-slate-500">No audit activity has been recorded for this clinic yet.</p>';
         return;
       }
-      feed.innerHTML = ClinicState.auditChain.slice(-4).reverse().map(entry => `
+      feed.innerHTML = ClinicState.auditChain.slice(0, 4).map(entry => `
         <div class="text-xs border-l-2 border-teal-500 pl-2.5 py-0.5">
           <div class="flex justify-between text-[11px] text-slate-400">
-            <span>${entry.timestamp}</span>
-            <span class="font-mono text-teal-700">#${entry.block}</span>
+            <span>${escapeHtml(new Date(entry.createdAt).toLocaleString())}</span>
+            <span class="font-mono text-teal-700">#${entry.sequence}</span>
           </div>
-          <p class="font-semibold text-slate-800">${entry.event}</p>
-          <p class="text-slate-500 truncate text-[11px]">${entry.resource}</p>
+          <p class="font-semibold text-slate-800">${escapeHtml(titleCase(entry.action))}</p>
+          <p class="text-slate-500 truncate text-[11px]">${escapeHtml(entry.objectType)} ${escapeHtml(entry.objectId || '')}</p>
         </div>
       `).join('');
     }
@@ -1030,18 +1048,18 @@
     function renderAuditTable() {
       const tbody = document.getElementById('auditLedgerTableBody');
       if (!ClinicState.auditChain.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No persistent audit records are available yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No audit activity has been recorded for this clinic yet.</td></tr>';
         return;
       }
       tbody.innerHTML = ClinicState.auditChain.map(b => `
         <tr class="hover:bg-slate-50">
-          <td class="py-2.5 px-3 font-bold text-teal-700">#${b.block}</td>
-          <td class="py-2.5 px-3 text-slate-600">${b.timestamp}</td>
-          <td class="py-2.5 px-3 text-slate-700 font-sans">${b.actor}</td>
-          <td class="py-2.5 px-3 font-bold font-sans text-slate-900">${b.event}</td>
-          <td class="py-2.5 px-3 text-slate-500 font-sans">${b.resource}</td>
-          <td class="py-2.5 px-3 text-emerald-700">${b.hash}</td>
-          <td class="py-2.5 px-3 text-slate-400">${b.prevHash}</td>
+          <td class="py-2.5 px-3 font-bold text-teal-700">#${b.sequence}</td>
+          <td class="py-2.5 px-3 text-slate-600">${escapeHtml(new Date(b.createdAt).toLocaleString())}</td>
+          <td class="py-2.5 px-3 text-slate-700 font-sans">${b.actorUserId ? `User ${b.actorUserId}` : 'System'}</td>
+          <td class="py-2.5 px-3 font-bold font-sans text-slate-900">${escapeHtml(b.action)}</td>
+          <td class="py-2.5 px-3 text-slate-500 font-sans">${escapeHtml(b.objectType)} ${escapeHtml(b.objectId || '')}</td>
+          <td class="py-2.5 px-3 text-emerald-700">${escapeHtml(b.entryHash)}</td>
+          <td class="py-2.5 px-3 text-slate-400">${escapeHtml(b.previousHash)}</td>
         </tr>
       `).join('');
     }
@@ -1049,38 +1067,105 @@
     // Render Team Table
     function renderTeam() {
       const tbody = document.getElementById('teamTableBody');
+      if (!ClinicState.team.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500">No members are available for this clinic.</td></tr>';
+        return;
+      }
+      const canManage = ['owner', 'admin'].includes(ClinicState.activeRole);
       tbody.innerHTML = ClinicState.team.map(m => `
         <tr class="hover:bg-slate-50">
-          <td class="py-3 px-4 font-semibold text-slate-900">${m.email}</td>
-          <td class="py-3 px-4 text-slate-700">${m.name}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900">${escapeHtml(m.email)}</td>
+          <td class="py-3 px-4 text-slate-700">${escapeHtml(m.name)}</td>
           <td class="py-3 px-4">
             <span class="text-xs font-bold px-2 py-0.5 rounded-full ${
-              m.role === 'Owner' ? 'bg-purple-100 text-purple-800' :
-              m.role === 'Doctor' ? 'bg-teal-100 text-teal-800' :
-              m.role === 'Admin' ? 'bg-indigo-100 text-indigo-800' :
-              m.role === 'Staff' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-700'
-            }">${m.role}</span>
+              m.role === 'owner' ? 'bg-purple-100 text-purple-800' :
+              m.role === 'doctor' ? 'bg-teal-100 text-teal-800' :
+              m.role === 'admin' ? 'bg-indigo-100 text-indigo-800' :
+              m.role === 'staff' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-700'
+            }">${escapeHtml(titleCase(m.role))}</span>
           </td>
-          <td class="py-3 px-4 text-slate-500 text-xs">${m.joined}</td>
+          <td class="py-3 px-4 text-slate-500 text-xs">${escapeHtml(m.joined)}</td>
           <td class="py-3 px-4 text-right">
-            <button class="text-xs text-slate-400 hover:text-slate-600">Permissions</button>
+            ${canManage && m.role !== 'owner' ? `<select aria-label="Change role for ${escapeHtml(m.email)}" data-member-role="${m.userId}" class="text-xs rounded border border-slate-200 px-2 py-1"><option value="admin" ${m.role === 'admin' ? 'selected' : ''}>Admin</option><option value="doctor" ${m.role === 'doctor' ? 'selected' : ''}>Doctor</option><option value="staff" ${m.role === 'staff' ? 'selected' : ''}>Staff</option><option value="viewer" ${m.role === 'viewer' ? 'selected' : ''}>Viewer</option></select><button data-member-remove="${m.userId}" class="ml-2 text-xs text-rose-600 hover:text-rose-800">Remove</button>` : '<span class="text-xs text-slate-400">—</span>'}
           </td>
         </tr>
       `).join('');
     }
 
     // Audit Chain Integrity Verification
-    function verifyAuditChain() {
-      if (!ClinicState.auditChain.length) {
-        alert('Persistent audit logging is not implemented yet.');
+    async function verifyAuditChain() {
+      const banner = document.getElementById('auditVerifyBanner');
+      const statusText = banner.querySelector('[data-audit-status]');
+      const detailText = banner.querySelector('[data-audit-detail]');
+      banner.className = 'p-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-800';
+      statusText.textContent = 'Verifying audit chain…';
+      detailText.textContent = 'Checking stored entries for this organization.';
+      try {
+        const result = await apiRequest('/api/v1/audit/verify/');
+        const valid = result.valid;
+        banner.className = `p-4 rounded-xl border ${valid ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-rose-200 bg-rose-50 text-rose-900'}`;
+        statusText.textContent = valid ? `Chain integrity verified: ${result.checked_entries} entries` : 'Audit chain integrity check failed';
+        detailText.textContent = valid ? 'All available entries matched their stored cryptographic links.' : `First invalid sequence: ${result.first_invalid_sequence}`;
+        document.getElementById('auditSummaryStatus').textContent = valid ? 'Verified' : 'Issue found';
+        document.getElementById('auditSummaryStatus').className = `text-xl font-bold ${valid ? 'text-emerald-700' : 'text-rose-700'}`;
+      } catch (error) {
+        banner.className = 'p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900';
+        statusText.textContent = 'Verification unavailable';
+        detailText.textContent = error.message;
+        document.getElementById('auditSummaryStatus').textContent = 'Unavailable';
+        document.getElementById('auditSummaryStatus').className = 'text-xl font-bold text-amber-700';
+      }
+    }
+
+    async function loadUsage() {
+      const planLabel = document.getElementById('planLabel');
+      const usageLabel = document.getElementById('patientUsageLabel');
+      const encountersLabel = document.getElementById('encounterUsageLabel');
+      if (!ClinicState.activeOrg) {
+        planLabel.textContent = 'Choose a clinic';
+        usageLabel.textContent = '—';
+        encountersLabel.textContent = 'Clinic usage appears here';
         return;
       }
-      const banner = document.getElementById('auditVerifyBanner');
-      banner.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-between animate-pulse';
-      setTimeout(() => {
-        banner.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-between';
-        alert(`Cryptographic Verification Successful!\n\nAll ${ClinicState.auditChain.length} blocks verified.\nGenesis hash: ${ClinicState.auditChain[0].hash}\nLatest head hash: ${ClinicState.auditChain[ClinicState.auditChain.length - 1].hash}`);
-      }, 400);
+      if (!['owner', 'admin'].includes(ClinicState.activeRole)) {
+        planLabel.textContent = 'Clinic usage';
+        usageLabel.textContent = 'Admin view';
+        encountersLabel.textContent = 'Usage details are available to owners and admins';
+        return;
+      }
+      const usage = await apiRequest('/api/v1/usage/');
+      planLabel.textContent = `${titleCase(usage.plan)} plan · Patients`;
+      if (usage.patients.limit === null) {
+        usageLabel.textContent = `${usage.patients.current} · No cap`;
+        document.getElementById('patientUsageBar').style.width = '0%';
+        document.getElementById('patientUsageBar').className = 'h-2 rounded-full transition-all bg-purple-600';
+      } else {
+        usageLabel.textContent = `${usage.patients.current} / ${usage.patients.limit}`;
+        const percentage = usage.patients.limit > 0 ? Math.min(100, usage.patients.current / usage.patients.limit * 100) : 100;
+        document.getElementById('patientUsageBar').style.width = `${percentage}%`;
+        document.getElementById('patientUsageBar').className = `h-2 rounded-full transition-all ${percentage >= 90 ? 'bg-rose-500' : 'bg-purple-600'}`;
+      }
+      const encounterLimit = usage.encounters.limit;
+      encountersLabel.textContent = encounterLimit === null
+        ? `${usage.encounters.created_this_month} encounters created this month · No cap`
+        : `${usage.encounters.created_this_month} / ${encounterLimit} encounters this month`;
+    }
+
+    async function loadAuditData() {
+      if (!ClinicState.activeOrg || !['owner', 'admin'].includes(ClinicState.activeRole)) return;
+      const data = await apiRequest('/api/v1/audit/events/');
+      ClinicState.auditChain = data.results.map(event => ({
+        sequence: event.sequence,
+        actorUserId: event.actor_user_id,
+        action: event.action,
+        objectType: event.object_type,
+        objectId: event.object_id,
+        createdAt: event.created_at,
+        entryHash: event.entry_hash,
+        previousHash: event.previous_hash
+      }));
+      renderQuickAudit();
+      renderAuditTable();
     }
 
     async function apiRequest(path, options = {}) {
@@ -1218,6 +1303,7 @@
           document.getElementById('patientDoctor').value = String(ClinicState.currentUser.id);
         }
         await loadClinicalData();
+        if (canViewAudit()) await loadAuditData();
       } catch (error) { alert(error.message); }
     });
 
@@ -1244,28 +1330,66 @@
           document.getElementById('encounterDoctorSelect').value = String(ClinicState.currentUser.id);
         }
         await loadClinicalData();
+        if (canViewAudit()) await loadAuditData();
         if (ClinicState.encounters[0]) loadSoapNote(ClinicState.encounters[0].id);
       } catch (error) { alert(error.message); }
     });
 
-    document.getElementById('inviteMemberForm').addEventListener('submit', (e) => {
+    document.getElementById('inviteMemberForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('inviteEmail').value;
-      const name = document.getElementById('inviteName').value;
+      const email = document.getElementById('inviteEmail').value.trim();
       const role = document.getElementById('inviteRole').value;
+      const status = document.getElementById('inviteStatus');
+      const button = e.currentTarget.querySelector('button[type="submit"]');
+      button.disabled = true;
+      status.textContent = 'Sending secure invitation…';
+      try {
+        const result = await apiRequest(`/api/v1/organizations/${ClinicState.activeOrg.id}/invitations/`, {
+          method: 'POST', body: JSON.stringify({email, role})
+        });
+        closeModal('inviteMemberModal');
+        e.currentTarget.reset();
+        if (result.token) {
+          window.alert(`Development invitation token for ${email}:\n\n${result.token}`);
+        } else {
+          window.alert(`Invitation email sent to ${email}. It expires in 7 days.`);
+        }
+        if (canViewAudit()) await loadAuditData();
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
 
-      ClinicState.team.push({
-        email, name,
-        role: role.charAt(0).toUpperCase() + role.slice(1),
-        joined: new Date().toISOString().substring(0, 10)
-      });
-
-      closeModal('inviteMemberModal');
-      document.getElementById('inviteMemberForm').reset();
-      renderTeam();
-      renderQuickAudit();
-      renderAuditTable();
-      alert(`Invitation sent to ${email} with role ${role.toUpperCase()}!`);
+    document.getElementById('teamTableBody').addEventListener('change', async event => {
+      const select = event.target.closest('[data-member-role]');
+      if (!select || !ClinicState.activeOrg) return;
+      select.disabled = true;
+      try {
+        await apiRequest(`/api/v1/organizations/${ClinicState.activeOrg.id}/members/${select.dataset.memberRole}/`, {
+          method: 'PATCH', body: JSON.stringify({role: select.value})
+        });
+        await loadOrganizationMembers();
+      } catch (error) {
+        window.alert(error.message);
+        await loadOrganizationMembers();
+      }
+    });
+    document.getElementById('teamTableBody').addEventListener('click', async event => {
+      const button = event.target.closest('[data-member-remove]');
+      if (!button || !ClinicState.activeOrg) return;
+      const member = ClinicState.team.find(item => String(item.userId) === button.dataset.memberRemove);
+      if (!member || !window.confirm(`Remove ${member.email} from this clinic?`)) return;
+      button.disabled = true;
+      try {
+        await apiRequest(`/api/v1/organizations/${ClinicState.activeOrg.id}/members/${member.userId}/`, {method: 'DELETE'});
+        await loadOrganizationMembers();
+        if (canViewAudit()) await loadAuditData();
+      } catch (error) {
+        window.alert(error.message);
+        button.disabled = false;
+      }
     });
 
     function startEncounterForPatient(patientId) {
@@ -1296,6 +1420,8 @@
     function applyRoleControls() {
       const canManagePatients = ['owner', 'admin', 'doctor'].includes(ClinicState.activeRole);
       const canManageEncounters = ['owner', 'admin', 'doctor'].includes(ClinicState.activeRole);
+      const canManageMembers = ['owner', 'admin'].includes(ClinicState.activeRole);
+      const canViewAudit = canManageMembers;
       document.querySelectorAll("button[onclick=\"openModal('newPatientModal')\"]")
         .forEach(button => { button.hidden = !canManagePatients; });
       document.querySelectorAll("button[onclick=\"openModal('newEncounterModal')\"]")
@@ -1303,6 +1429,10 @@
       document.querySelectorAll('#patientsTableBody button').forEach(button => {
         button.hidden = !canManageEncounters;
       });
+      document.querySelector('[data-view="team"]').hidden = !canManageMembers;
+      document.querySelector('#view-team button[onclick="openModal(\'inviteMemberModal\')"]').hidden = !canManageMembers;
+      document.getElementById('auditNavTab').hidden = !canViewAudit;
+      document.getElementById('auditDashboardButton').hidden = !canViewAudit;
     }
 
     async function activateOrganization(organizationId) {
@@ -1315,7 +1445,30 @@
       document.getElementById('tenantSubhead').textContent = ClinicState.activeOrg?.name || membership.organization_name;
       document.getElementById('currentUserRole').textContent = titleCase(membership.role);
       applyRoleControls();
-      await Promise.all([loadPatientDoctors(), loadClinicalData()]);
+      await Promise.all([loadPatientDoctors(), loadClinicalData(), loadOrganizationMembers()]);
+      await loadUsage();
+      if (canViewAudit()) await loadAuditData();
+    }
+
+    function canViewAudit() {
+      return ['owner', 'admin'].includes(ClinicState.activeRole);
+    }
+
+    async function loadOrganizationMembers() {
+      if (!ClinicState.activeOrg) {
+        ClinicState.team = [];
+        renderTeam();
+        return;
+      }
+      const members = await apiRequest(`/api/v1/organizations/${ClinicState.activeOrg.id}/members/`);
+      ClinicState.team = members.map(member => ({
+        userId: member.user.id,
+        email: member.user.email,
+        name: [member.user.first_name, member.user.last_name].filter(Boolean).join(' ') || member.user.email,
+        role: member.role,
+        joined: new Date(member.created_at).toLocaleDateString()
+      }));
+      renderTeam();
     }
 
     // Hydrate account and active clinic from the authenticated API session.
@@ -1370,9 +1523,15 @@
         } else {
           ClinicState.activeOrg = null;
           ClinicState.activeRole = null;
+          ClinicState.team = [];
+          ClinicState.auditChain = [];
           document.getElementById('tenantSubhead').textContent = 'Choose an organization to load clinic data';
           applyRoleControls();
           renderClinicalData();
+          renderTeam();
+          renderQuickAudit();
+          renderAuditTable();
+          loadUsage();
         }
       } catch (error) {
         const label = document.getElementById('authActionLabel');

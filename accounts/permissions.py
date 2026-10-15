@@ -11,11 +11,11 @@ ROLE_PERMISSIONS = {
     Membership.Role.OWNER: {
         "read", "manage_organization", "manage_members", "delete_organization",
         "manage_patients", "manage_encounters", "edit_clinical_notes",
-        "manage_appointments", "view_audit",
+        "manage_appointments", "view_audit", "view_usage",
     },
     Membership.Role.ADMIN: {
         "read", "manage_organization", "manage_members", "manage_patients",
-        "manage_encounters", "edit_clinical_notes", "manage_appointments", "view_audit",
+        "manage_encounters", "edit_clinical_notes", "manage_appointments", "view_audit", "view_usage",
     },
     Membership.Role.DOCTOR: {"read", "manage_patients", "manage_encounters", "edit_clinical_notes"},
     Membership.Role.STAFF: {"read", "manage_appointments"},

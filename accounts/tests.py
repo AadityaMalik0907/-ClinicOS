@@ -1,10 +1,15 @@
 from datetime import date
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core import mail
+from django.core.exceptions import FieldError
 from django.conf import settings
 from django.core.exceptions import FieldError, ImproperlyConfigured
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
+from django.test import TestCase, TransactionTestCase, override_settings
+from django.core.cache import cache
 from django.test import Client, TestCase, TransactionTestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -13,7 +18,8 @@ from cryptography.fernet import Fernet
 from config.settings import csv_values, normalize_hostname
 from .fields import EncryptedFieldError
 from .audit import append_audit_event
-from .models import AuditEvent, Encounter, Membership, Organization, Patient
+from .models import AuditEvent, Encounter, Membership, Organization, Patient, UsageEvent
+from .usage import month_window, record_usage
 
 
 User = get_user_model()
@@ -275,6 +281,225 @@ class AuditLogTests(APITestCase):
         self.client.force_authenticate(self.viewer)
         self.assertEqual(self.client.get("/api/v1/audit/verify/").status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_owner_can_read_audit_events_without_clinical_metadata(self):
+        event = append_audit_event(
+            organization_id=self.organization.pk,
+            actor_user_id=self.owner.pk,
+            action="patient.read",
+            object_type="patient",
+            object_id="42",
+            metadata={"source": "test"},
+        )
+
+        response = self.client.get("/api/v1/audit/events/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["entry_hash"], event.entry_hash)
+        self.assertNotIn("metadata", response.data["results"][0])
+
+
+class UsageAndRateLimitTests(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(email="usage-owner@example.com", password="SafePassword!2026")
+        self.organization = Organization.objects.create(name="Usage Clinic", slug="usage-clinic")
+        Membership.objects.create(
+            user=self.owner, organization=self.organization, role=Membership.Role.OWNER,
+        )
+        session = self.client.session
+        session["active_organization_id"] = self.organization.pk
+        session.save()
+        self.client.force_authenticate(self.owner)
+
+    @override_settings(FREE_PATIENT_LIMIT=1, FREE_ENCOUNTERS_MONTHLY_LIMIT=1)
+    def test_free_plan_limits_meter_successful_creates_and_exposes_usage(self):
+        first_patient = self.client.post(
+            "/api/v1/patients/",
+            {"first_name": "Usage", "last_name": "One", "date_of_birth": "1990-01-01", "gender": "other"},
+            format="json",
+        )
+        self.assertEqual(first_patient.status_code, status.HTTP_201_CREATED)
+        over_patient_limit = self.client.post(
+            "/api/v1/patients/",
+            {"first_name": "Usage", "last_name": "Two", "date_of_birth": "1990-01-01", "gender": "other"},
+            format="json",
+        )
+        self.assertEqual(over_patient_limit.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(over_patient_limit.data["error"]["code"], "plan_limit_exceeded")
+
+        encounter_data = {"patient_id": first_patient.data["id"], "chief_complaint": "Usage test"}
+        first_encounter = self.client.post("/api/v1/encounters/", encounter_data, format="json")
+        self.assertEqual(first_encounter.status_code, status.HTTP_201_CREATED)
+        over_encounter_limit = self.client.post("/api/v1/encounters/", encounter_data, format="json")
+        self.assertEqual(over_encounter_limit.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(over_encounter_limit.data["error"]["code"], "plan_limit_exceeded")
+        self.assertEqual(UsageEvent.objects.count(), 2)
+
+        usage = self.client.get("/api/v1/usage/")
+        self.assertEqual(usage.status_code, status.HTTP_200_OK)
+        self.assertEqual(usage.data["patients"], {"current": 1, "created_this_month": 1, "limit": 1})
+        self.assertEqual(usage.data["encounters"]["created_this_month"], 1)
+        self.assertEqual(usage.data["encounters"]["limit"], 1)
+
+    @override_settings(FREE_PATIENT_LIMIT=0, FREE_ENCOUNTERS_MONTHLY_LIMIT=0)
+    def test_pro_plan_is_unmetered_for_learning_project_quotas(self):
+        self.organization.plan = Organization.Plan.PRO
+        self.organization.save(update_fields=("plan",))
+        response = self.client.post(
+            "/api/v1/patients/",
+            {"first_name": "Pro", "last_name": "Patient", "date_of_birth": "1990-01-01", "gender": "other"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(self.client.get("/api/v1/usage/").data["patients"]["limit"])
+
+    def test_month_window_advances_across_year_boundary(self):
+        from datetime import datetime, timezone as dt_timezone
+
+        start, next_month = month_window(datetime(2026, 12, 15, tzinfo=dt_timezone.utc))
+        self.assertEqual(start.isoformat(), "2026-12-01T00:00:00+00:00")
+        self.assertEqual(next_month.isoformat(), "2027-01-01T00:00:00+00:00")
+
+    @patch("rest_framework.throttling.ScopedRateThrottle.THROTTLE_RATES", {"auth_register": "1/minute"})
+    def test_registration_is_throttled_per_client_ip(self):
+        cache.clear()
+        self.client.force_authenticate(user=None)
+        first = self.client.post(
+            "/api/v1/auth/register/",
+            {"email": "rate-one@example.com", "password": "GoodPassword!8492", "first_name": "Rate", "last_name": "One"},
+            format="json",
+        )
+        second = self.client.post(
+            "/api/v1/auth/register/",
+            {"email": "rate-two@example.com", "password": "GoodPassword!8492", "first_name": "Rate", "last_name": "Two"},
+            format="json",
+        )
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(second.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class CrossTenantAttackTests(APITestCase):
+    def setUp(self):
+        self.user_a = User.objects.create_user(email="tenant-a@example.com", password="SafePassword!2026")
+        self.user_b = User.objects.create_user(email="tenant-b@example.com", password="SafePassword!2026")
+        self.organization_a = Organization.objects.create(name="Tenant A", slug="tenant-a")
+        self.organization_b = Organization.objects.create(name="Tenant B", slug="tenant-b")
+        Membership.objects.create(
+            user=self.user_a, organization=self.organization_a, role=Membership.Role.OWNER,
+        )
+        Membership.objects.create(
+            user=self.user_b, organization=self.organization_b, role=Membership.Role.OWNER,
+        )
+        self.patient_a = Patient.objects.create(
+            organization=self.organization_a, first_name="Visible", last_name="Patient",
+            date_of_birth=date(1985, 2, 3), gender=Patient.Gender.OTHER,
+        )
+        self.patient_b = Patient.objects.create(
+            organization=self.organization_b, first_name="Secret", last_name="Patient",
+            date_of_birth=date(1979, 5, 6), gender=Patient.Gender.OTHER,
+        )
+        self.encounter_b = Encounter.objects.create(
+            organization=self.organization_b, patient=self.patient_b, created_by=self.user_b,
+            chief_complaint="Tenant B private clinical data",
+        )
+        self.client.force_authenticate(self.user_a)
+        session = self.client.session
+        session["active_organization_id"] = self.organization_a.pk
+        session.save()
+
+    def test_tenant_ids_in_queries_and_payloads_cannot_select_another_tenant(self):
+        listed_patients = self.client.get(
+            f"/api/v1/patients/?organization_id={self.organization_b.pk}"
+        )
+        self.assertEqual(listed_patients.status_code, status.HTTP_200_OK)
+        self.assertEqual(listed_patients.data["count"], 1)
+        self.assertEqual(listed_patients.data["results"][0]["id"], self.patient_a.pk)
+
+        foreign_patient = self.client.get(f"/api/v1/patients/{self.patient_b.pk}/")
+        self.assertEqual(foreign_patient.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            self.client.patch(
+                f"/api/v1/patients/{self.patient_b.pk}/", {"first_name": "Changed"}, format="json",
+            ).status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.assertEqual(
+            self.client.delete(f"/api/v1/patients/{self.patient_b.pk}/").status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+        forged_patient = self.client.post(
+            "/api/v1/patients/",
+            {
+                "organization_id": self.organization_b.pk,
+                "first_name": "Created",
+                "last_name": "In A",
+                "date_of_birth": "2000-01-01",
+                "gender": "other",
+            },
+            format="json",
+        )
+        self.assertEqual(forged_patient.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Patient.objects.get(pk=forged_patient.data["id"]).organization_id, self.organization_a.pk)
+
+    def test_foreign_encounter_and_patient_ids_are_not_accessible_or_linkable(self):
+        listed = self.client.get(f"/api/v1/encounters/?organization_id={self.organization_b.pk}")
+        self.assertEqual(listed.status_code, status.HTTP_200_OK)
+        self.assertEqual(listed.data["count"], 0)
+        self.assertEqual(
+            self.client.get(f"/api/v1/encounters/{self.encounter_b.pk}/").status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.assertEqual(
+            self.client.patch(
+                f"/api/v1/encounters/{self.encounter_b.pk}/", {"assessment": "changed"}, format="json",
+            ).status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.assertEqual(
+            self.client.delete(f"/api/v1/encounters/{self.encounter_b.pk}/").status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        forged_encounter = self.client.post(
+            "/api/v1/encounters/",
+            {"patient_id": self.patient_b.pk, "chief_complaint": "Cross tenant attempt"},
+            format="json",
+        )
+        self.assertEqual(forged_encounter.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Encounter.objects.filter(organization=self.organization_a).exists())
+
+    def test_audit_and_usage_endpoints_cannot_be_switched_to_a_foreign_tenant(self):
+        append_audit_event(
+            organization_id=self.organization_a.pk, actor_user_id=self.user_a.pk,
+            action="patient.read", object_type="patient", object_id=self.patient_a.pk,
+        )
+        append_audit_event(
+            organization_id=self.organization_b.pk, actor_user_id=self.user_b.pk,
+            action="patient.read", object_type="patient", object_id=self.patient_b.pk,
+        )
+        record_usage(
+            organization_id=self.organization_b.pk, actor_user_id=self.user_b.pk,
+            metric=UsageEvent.Metric.PATIENT_CREATED,
+        )
+
+        audit = self.client.get("/api/v1/audit/verify/")
+        self.assertEqual(audit.status_code, status.HTTP_200_OK)
+        self.assertEqual(audit.data["checked_entries"], 1)
+        audit_events = self.client.get("/api/v1/audit/events/")
+        self.assertEqual(audit_events.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(audit_events.data["results"]), 1)
+        self.assertEqual(audit_events.data["results"][0]["object_id"], str(self.patient_a.pk))
+        usage = self.client.get("/api/v1/usage/")
+        self.assertEqual(usage.status_code, status.HTTP_200_OK)
+        self.assertEqual(usage.data["patients"]["created_this_month"], 0)
+
+        session = self.client.session
+        session["active_organization_id"] = self.organization_b.pk
+        session.save()
+        self.assertEqual(self.client.get("/api/v1/audit/verify/").status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.get("/api/v1/audit/events/").status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.get("/api/v1/usage/").status_code, status.HTTP_404_NOT_FOUND)
+
 
 class AuthenticationApiTests(APITestCase):
     def setUp(self):
@@ -335,6 +560,21 @@ class AuthenticationApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, {"error": {"code": "validation_error", "message": "Invalid email or password."}})
+
+    @override_settings(DEBUG=False)
+    def test_production_login_page_does_not_expose_local_demo_credentials_or_mock_route(self):
+        response = self.client.get("/login/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotContains(response, "sarah.chen@clinicos.org")
+        self.assertNotContains(response, "ClinicOS!Demo2026")
+        self.assertNotContains(response, "Synthetic Mock Mode")
+
+    def test_readiness_endpoint_returns_a_minimal_database_status(self):
+        response = self.client.get("/health/ready/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"status": "ok"})
 
 
 class OrganizationPhaseOneTests(APITestCase):
@@ -408,6 +648,48 @@ class OrganizationPhaseOneTests(APITestCase):
         self.assertFalse(
             Membership.objects.filter(user=self.member, organization_id=organization_id).exists()
         )
+
+    @override_settings(
+        DEBUG=False,
+        EXPOSE_INVITATION_TOKENS=False,
+        EMAIL_HOST="smtp.example.test",
+        DEFAULT_FROM_EMAIL="ClinicOS <no-reply@example.test>",
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        SITE_URL="https://clinic.example.test",
+    )
+    def test_production_invitation_sends_token_link_without_returning_token(self):
+        organization = Organization.objects.create(name="Mail Clinic", slug="mail-clinic")
+        Membership.objects.create(user=self.owner, organization=organization, role=Membership.Role.OWNER)
+
+        response = self.client.post(
+            f"/api/v1/organizations/{organization.pk}/invitations/",
+            {"email": "new-member@example.test", "role": Membership.Role.DOCTOR},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertNotIn("token", response.data)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("https://clinic.example.test/login/?accept_invite=1#invite=", mail.outbox[0].body)
+
+    @override_settings(
+        DEBUG=False,
+        EXPOSE_INVITATION_TOKENS=False,
+        EMAIL_HOST="",
+        DEFAULT_FROM_EMAIL="ClinicOS <no-reply@example.test>",
+    )
+    def test_production_invitation_fails_without_mail_setup_and_creates_no_record(self):
+        organization = Organization.objects.create(name="No Mail Clinic", slug="no-mail-clinic")
+        Membership.objects.create(user=self.owner, organization=organization, role=Membership.Role.OWNER)
+
+        response = self.client.post(
+            f"/api/v1/organizations/{organization.pk}/invitations/",
+            {"email": "new-member@example.test", "role": Membership.Role.DOCTOR},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertFalse(organization.invitations.exists())
 
     def test_user_cannot_view_another_organizations_details(self):
         organization = Organization.objects.create(name="Private Clinic", slug="private-clinic")

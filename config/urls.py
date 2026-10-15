@@ -31,7 +31,8 @@ from accounts.clinical_api import (
     PatientDetailView,
     PatientListCreateView,
 )
-from accounts.audit_api import AuditVerificationView
+from accounts.audit_api import AuditEventListView, AuditVerificationView
+from accounts.usage_api import UsageSummaryView
 
 urlpatterns = [
     path("health/ready/", readiness, name="readiness"),
@@ -63,4 +64,6 @@ urlpatterns = [
     path("api/v1/encounters/", EncounterListCreateView.as_view(), name="v1-encounters"),
     path("api/v1/encounters/<int:encounter_id>/", EncounterDetailView.as_view(), name="v1-encounter-detail"),
     path("api/v1/audit/verify/", AuditVerificationView.as_view(), name="v1-audit-verify"),
+    path("api/v1/audit/events/", AuditEventListView.as_view(), name="v1-audit-events"),
+    path("api/v1/usage/", UsageSummaryView.as_view(), name="v1-usage"),
 ]

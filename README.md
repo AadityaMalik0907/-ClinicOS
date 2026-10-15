@@ -118,7 +118,7 @@ Phase 1 adds a profile for every registered user, organization membership APIs, 
 | `POST /api/v1/organizations/<id>/invitations/` | Owner/admin creates an invitation |
 | `POST /api/v1/invitations/accept/` | The invited user accepts with the invitation token |
 
-Invitation email delivery is intentionally not included yet. During development, the invitation endpoint returns a one-time token in its response; a later operations phase can send that token through an email provider. The invited user's email must match the invitation email before a membership is created.
+Invitations are sent through SMTP on deployments, and the response never includes the one-time token. In local debug mode the API returns a development token so the flow can be tried without an email service. Invitees must create/sign into an account using the invited email address before accepting the seven-day invitation link.
 
 Organization selection is stored in the signed-in user's session, so separate browser sessions can select different clinics. `/api/v1/auth/me/` returns the selected membership as `active_organization`. Organization access checks and the central role permission map are in `accounts/permissions.py`. Owners and admins can manage organization settings and memberships; only owners can delete an organization. Role capabilities are also enforced on the patient and encounter APIs described below.
 
@@ -157,6 +157,22 @@ Keep this key in a secrets manager and in a separately protected backup. Losing 
 
 Migration `0005_auditevent` creates a per-organization, append-only audit chain. Successful patient and encounter collection reads, individual reads, creates, updates, and deletes are recorded with actor and resource IDs. Audit metadata does not include patient names, phone numbers, or clinical field values. Owners and admins can verify the active clinic's chain with `GET /api/v1/audit/verify/`; a valid chain returns HTTP 200, and detected corruption returns HTTP 409 with the first invalid sequence. Other roles cannot run verification. PostgreSQL adds row-level tenant policies and triggers that reject updates, deletes, and truncation; application model/queryset guards provide the same append-only behavior in local SQLite. The hashes make changes detectable, but this database-local chain is not an external backup or cryptographic signature.
 
+## Phase 6 usage and rate limits
+
+Migration `0006_usageevent` stores one non-PHI metering event for each successful patient or encounter creation through the clinical API. Owners and admins can inspect the active clinic's current patient count, monthly create counts, plan, and limits with `GET /api/v1/usage/`. The default Free plan allows 100 current patient records and 250 encounter creations per UTC calendar month; Pro has no caps for these two metrics. Override the Free limits with `FREE_PATIENT_LIMIT` and `FREE_ENCOUNTERS_MONTHLY_LIMIT`.
+
+The API throttles anonymous traffic to 120 requests/hour and signed-in users to 1000 requests/hour by default. Login is limited to 10/minute and registration to 5/hour per client IP. Override rates with `API_ANON_RATE`, `API_USER_RATE`, `API_LOGIN_RATE`, and `API_REGISTER_RATE`. The development cache is process-local; deployments with multiple web workers need a shared Django cache backend so rate limits are consistent across workers. These quotas and usage events apply to patient and encounter creation through the API.
+
+## Phase 7 security checks and load testing
+
+The cross-tenant attack tests cover forged organization selectors, foreign patient/encounter IDs, cross-tenant encounter links, and unauthorized active-organization switching. Run them with `python manage.py test accounts.tests.CrossTenantAttackTests`. The load runner at [scripts/load_test.py](scripts/load_test.py) measures authenticated patient-list latency and throughput; see [docs/phase7-benchmarks.md](docs/phase7-benchmarks.md) for setup and the benchmark record template. Each request appends an audit event, so the runner requires `--allow-audit-writes` and should use synthetic data. No live benchmark has been recorded yet.
+
+## Deploying a staging instance
+
+The project includes a Render blueprint and production settings. Configure a persistent PostgreSQL `DATABASE_URL`, a Fernet `FIELD_ENCRYPTION_KEY`, and the other values described in [docs/deployment.md](docs/deployment.md). The blueprint runs migrations and deployment checks before starting Gunicorn. `DJANGO_DEBUG=false` requires an explicit secret, encryption key, and PostgreSQL URL; never deploy with the local `.env` values. Vercel supports Django too, but this repository's release/migration flow is currently documented for Render.
+
+The dashboard now reads the real clinic usage summary, team membership list, and audit events. Owners/admins can change member roles, remove members, and run server-side audit verification. Invitations are emailed on a configured deployment, and encounter notes can be printed from the live record.
+
 ## Planned milestones
 
 1. Account and organization foundation, registration, organization management, and session login. (Complete; JWT remains deferred unless a stateless client is needed.)
@@ -164,7 +180,7 @@ Migration `0005_auditevent` creates a per-organization, append-only audit chain.
 3. Patient and encounter CRUD with tenant scoping and IDOR protection. (Complete for the API and dashboard read/create flows.)
 4. PostgreSQL row-level security and application-level field encryption. (Implemented; PostgreSQL runtime verification is pending.)
 5. Append-only, hash-chained audit log and verification endpoint. (Implemented; apply migration `0005_auditevent` before use.)
-6. Usage metering, plan limits, and rate limiting.
-7. Cross-tenant attack suite, load testing, and documented benchmarks.
+6. Usage metering, plan limits, and rate limiting. (Implemented; apply migration `0006_usageevent` before use.)
+7. Cross-tenant attack suite, load-test runner, and documented benchmark procedure. (Attack suite and harness implemented; live benchmark and PostgreSQL runtime verification remain pending.)
 
-Success metrics will be reported only after they are measured: tenant-isolation test count, audit tamper checks, and patient-list latency under a documented workload.
+The seven-phase roadmap ends at Phase 7. Remaining completion work is operational verification: apply pending migrations, verify PostgreSQL RLS/encryption/audit/usage behavior with the application role, and run and record the HTTP benchmark under a documented workload. Success metrics are reported only after measurement.
