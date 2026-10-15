@@ -38,6 +38,9 @@ except (ValueError, UnicodeEncodeError):
     raise ImproperlyConfigured("FIELD_ENCRYPTION_KEY must be a valid Fernet key.") from None
 _default_hosts = "localhost,127.0.0.1" if DEBUG else os.environ.get("RENDER_EXTERNAL_HOSTNAME", "")
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", _default_hosts).split(",") if h.strip()]
+vercel_hostname = "clinic-pyxkt73ok-aadityamalik0907s-projects.vercel.app"
+if vercel_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(vercel_hostname)
 if not DEBUG and not ALLOWED_HOSTS:
     raise ImproperlyConfigured("Set DJANGO_ALLOWED_HOSTS or use a supported platform hostname variable.")
 render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
@@ -54,6 +57,9 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 if SITE_URL and SITE_URL not in CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append(SITE_URL)
+vercel_origin = f"https://{vercel_hostname}"
+if vercel_origin not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(vercel_origin)
 if render_hostname:
     render_origin = f"https://{render_hostname}"
     if render_origin not in CSRF_TRUSTED_ORIGINS:
