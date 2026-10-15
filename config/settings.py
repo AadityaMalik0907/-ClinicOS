@@ -38,7 +38,7 @@ except (ValueError, UnicodeEncodeError):
     raise ImproperlyConfigured("FIELD_ENCRYPTION_KEY must be a valid Fernet key.") from None
 _default_hosts = "localhost,127.0.0.1" if DEBUG else os.environ.get("RENDER_EXTERNAL_HOSTNAME", "")
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", _default_hosts).split(",") if h.strip()]
-vercel_hostname = "clinic-pyxkt73ok-aadityamalik0907s-projects.vercel.app"
+vercel_hostname = "clinic-os-flax.vercel.app"
 if vercel_hostname not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(vercel_hostname)
 if not DEBUG and not ALLOWED_HOSTS:
