@@ -9,8 +9,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Encounter, Membership, Patient
+from .models import Encounter, Membership, Organization, Patient, UsageEvent
 from .audit import append_audit_event
+from .usage import check_encounter_limit, check_patient_limit, record_usage
 from .permissions import ActiveOrganizationPermission
 from .serializers import EncounterSerializer, PatientSerializer
 
@@ -64,7 +65,13 @@ class PatientListCreateView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
+            locked_organization = Organization.objects.select_for_update().get(pk=organization.pk)
+            check_patient_limit(locked_organization)
             patient = serializer.save(organization=organization)
+            record_usage(
+                organization_id=organization.pk, actor_user_id=request.user.pk,
+                metric=UsageEvent.Metric.PATIENT_CREATED,
+            )
             append_audit_event(
                 organization_id=organization.pk, actor_user_id=request.user.pk,
                 action="patient.created", object_type="patient", object_id=patient.pk,
@@ -182,7 +189,13 @@ class EncounterListCreateView(APIView):
         if membership.role == Membership.Role.DOCTOR and "assigned_doctor_id" not in request.data:
             defaults["assigned_doctor"] = request.user
         with transaction.atomic():
+            locked_organization = Organization.objects.select_for_update().get(pk=organization.pk)
+            check_encounter_limit(locked_organization)
             encounter = serializer.save(**defaults)
+            record_usage(
+                organization_id=organization.pk, actor_user_id=request.user.pk,
+                metric=UsageEvent.Metric.ENCOUNTER_CREATED,
+            )
             append_audit_event(
                 organization_id=organization.pk, actor_user_id=request.user.pk,
                 action="encounter.created", object_type="encounter", object_id=encounter.pk,

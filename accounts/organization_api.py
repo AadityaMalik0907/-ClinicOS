@@ -2,10 +2,13 @@ import hashlib
 import secrets
 from datetime import timedelta
 
+from django.conf import settings
+from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import serializers, status
+from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -24,6 +27,12 @@ from .permissions import (
     organization_queryset,
     require_organization_permission,
 )
+
+
+class InvitationServiceUnavailable(APIException):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_detail = "Invitation email delivery is not configured for this deployment."
+    default_code = "service_unavailable"
 
 
 class OrganizationListCreateView(APIView):
@@ -167,29 +176,57 @@ class OrganizationInvitationCreateView(APIView):
         membership = membership_for(request.user, organization_id)
         require_organization_permission(membership, "manage_members")
 
-        email = str(request.data.get("email", "")).strip().lower()
+        email = serializers.EmailField().run_validation(str(request.data.get("email", "")).strip()).lower()
         role = request.data.get("role", Membership.Role.STAFF)
-        if not email:
-            raise serializers.ValidationError({"email": "This field is required."})
         if role not in Membership.Role.values:
             raise serializers.ValidationError({"role": "Choose a valid organization role."})
         if role == Membership.Role.OWNER:
             raise serializers.ValidationError({"role": "Owner membership cannot be assigned by invitation."})
         if Membership.objects.filter(organization_id=organization_id, user__email__iexact=email).exists():
             raise serializers.ValidationError({"email": "This user is already a member of the organization."})
+        if OrganizationInvitation.objects.filter(
+            organization_id=organization_id,
+            email__iexact=email,
+            accepted_at__isnull=True,
+            expires_at__gt=timezone.now(),
+        ).exists():
+            raise serializers.ValidationError({"email": "An active invitation already exists for this address."})
+
+        if not settings.EXPOSE_INVITATION_TOKENS and (
+            not settings.EMAIL_HOST or "localhost" in settings.DEFAULT_FROM_EMAIL.lower()
+        ):
+            raise InvitationServiceUnavailable("Invitation email delivery is not configured for this deployment.")
 
         raw_token = secrets.token_urlsafe(32)
-        invitation = OrganizationInvitation.objects.create(
-            organization_id=organization_id,
-            invited_by=request.user,
-            email=email,
-            role=role,
-            token_hash=hashlib.sha256(raw_token.encode()).hexdigest(),
-            expires_at=timezone.now() + timedelta(days=7),
-        )
+        with transaction.atomic():
+            invitation = OrganizationInvitation.objects.create(
+                organization_id=organization_id,
+                invited_by=request.user,
+                email=email,
+                role=role,
+                token_hash=hashlib.sha256(raw_token.encode()).hexdigest(),
+                expires_at=timezone.now() + timedelta(days=7),
+            )
+            if not settings.EXPOSE_INVITATION_TOKENS:
+                site_url = settings.SITE_URL or request.build_absolute_uri("/").rstrip("/")
+                invite_url = f"{site_url}/login/?accept_invite=1#invite={raw_token}"
+                sent = send_mail(
+                    subject=f"Invitation to join {membership.organization.name} on ClinicOS",
+                    message=(
+                        f"You have been invited to join {membership.organization.name} as {role}.\n\n"
+                        f"Sign in or create an account with this email address, then accept the invitation:\n"
+                        f"{invite_url}\n\nThis link expires in 7 days. If you were not expecting this invitation, ignore this email."
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+                if sent != 1:
+                    raise InvitationServiceUnavailable("Invitation email could not be delivered.")
         response = OrganizationInvitationSerializer(invitation).data
-        # Email delivery is a later phase; expose the one-time token for local development.
-        response["token"] = raw_token
+        # The raw token is returned only for local development, never in production responses.
+        if settings.EXPOSE_INVITATION_TOKENS:
+            response["token"] = raw_token
         return Response(response, status=status.HTTP_201_CREATED)
 
 
@@ -201,22 +238,23 @@ class InvitationAcceptView(APIView):
         if not raw_token:
             raise serializers.ValidationError({"token": "This field is required."})
         token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
-        invitation = get_object_or_404(
-            OrganizationInvitation.objects.select_related("organization"),
-            token_hash=token_hash,
-        )
-        if not invitation.is_active:
-            raise serializers.ValidationError({"token": "This invitation is expired or already accepted."})
-        if invitation.email.lower() != request.user.email.lower():
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("This invitation was issued for a different email address.")
-        membership, _ = Membership.objects.get_or_create(
-            user=request.user,
-            organization=invitation.organization,
-            defaults={"role": invitation.role},
-        )
-        invitation.accepted_at = timezone.now()
-        invitation.save(update_fields=("accepted_at",))
+        with transaction.atomic():
+            invitation = get_object_or_404(
+                OrganizationInvitation.objects.select_for_update().select_related("organization"),
+                token_hash=token_hash,
+            )
+            if not invitation.is_active:
+                raise serializers.ValidationError({"token": "This invitation is expired or already accepted."})
+            if invitation.email.lower() != request.user.email.lower():
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("This invitation was issued for a different email address.")
+            membership, _ = Membership.objects.get_or_create(
+                user=request.user,
+                organization=invitation.organization,
+                defaults={"role": invitation.role},
+            )
+            invitation.accepted_at = timezone.now()
+            invitation.save(update_fields=("accepted_at",))
         return Response(MembershipSerializer(membership).data, status=status.HTTP_200_OK)
 
 

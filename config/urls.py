@@ -7,7 +7,7 @@ The `urlpatterns` list routes URLs to views. For more information please see:
 
 from django.contrib import admin
 from django.urls import path
-from accounts.views import index, login_view
+from accounts.views import index, login_view, readiness
 from accounts.api_views import (
     CurrentUserView,
     LoginView,
@@ -31,9 +31,11 @@ from accounts.clinical_api import (
     PatientDetailView,
     PatientListCreateView,
 )
-from accounts.audit_api import AuditVerificationView
+from accounts.audit_api import AuditEventListView, AuditVerificationView
+from accounts.usage_api import UsageSummaryView
 
 urlpatterns = [
+    path("health/ready/", readiness, name="readiness"),
     path("admin/", admin.site.urls),
     path("", index, name="index"),
     path("login/", login_view, name="login"),
@@ -62,4 +64,6 @@ urlpatterns = [
     path("api/v1/encounters/", EncounterListCreateView.as_view(), name="v1-encounters"),
     path("api/v1/encounters/<int:encounter_id>/", EncounterDetailView.as_view(), name="v1-encounter-detail"),
     path("api/v1/audit/verify/", AuditVerificationView.as_view(), name="v1-audit-verify"),
+    path("api/v1/audit/events/", AuditEventListView.as_view(), name="v1-audit-events"),
+    path("api/v1/usage/", UsageSummaryView.as_view(), name="v1-usage"),
 ]

@@ -18,15 +18,16 @@ class PostgresRLSContextMiddleware:
                     cursor.execute(
                         "SELECT r.rolsuper, r.rolbypassrls, "
                         "COALESCE(bool_and(c.relrowsecurity AND c.relforcerowsecurity), false), "
-                        "(SELECT count(*) = 3 FROM pg_policies p "
-                        " WHERE p.schemaname = current_schema() AND "
-                        " ((p.tablename = 'accounts_patient' AND p.policyname = 'patient_tenant_isolation') "
+                        "(SELECT count(*) = 4 FROM pg_policies p "
+                        " WHERE p.schemaname = current_schema() AND ("
+                        " (p.tablename = 'accounts_patient' AND p.policyname = 'patient_tenant_isolation') "
                         " OR (p.tablename = 'accounts_encounter' AND p.policyname = 'encounter_tenant_isolation') "
-                        " OR (p.tablename = 'accounts_auditevent' AND p.policyname = 'audit_tenant_isolation'))) "
+                        " OR (p.tablename = 'accounts_auditevent' AND p.policyname = 'audit_tenant_isolation') "
+                        " OR (p.tablename = 'accounts_usageevent' AND p.policyname = 'usage_tenant_isolation')) ) "
                         "FROM pg_roles r CROSS JOIN pg_class c "
                         "WHERE r.rolname = current_user AND c.oid IN "
                         " ('accounts_patient'::regclass, 'accounts_encounter'::regclass, "
-                        "  'accounts_auditevent'::regclass) "
+                        "  'accounts_auditevent'::regclass, 'accounts_usageevent'::regclass) "
                         "GROUP BY r.rolsuper, r.rolbypassrls"
                     )
                     role_is_superuser, role_bypasses_rls, policies_enabled, policies_exist = cursor.fetchone()
@@ -36,7 +37,7 @@ class PostgresRLSContextMiddleware:
                     )
                 if not policies_enabled or not policies_exist:
                     raise ImproperlyConfigured(
-                        "PostgreSQL patient, encounter, and audit RLS policies are missing; run database migrations."
+                        "PostgreSQL tenant RLS policies are missing; run database migrations."
                     )
                 connection.clinicos_rls_verified = True
 

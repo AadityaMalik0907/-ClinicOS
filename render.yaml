@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: clinicos
+    runtime: python
+    plan: 1c-2g
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    preDeployCommand: python manage.py migrate --noinput && python manage.py createcachetable && python manage.py check --deploy
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --access-logfile - --error-logfile -
+    healthCheckPath: /health/ready/
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SECURE_HSTS_SECONDS
+        value: "86400"
+      - key: FIELD_ENCRYPTION_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SITE_URL
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
+        value: "true"

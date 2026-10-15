@@ -62,7 +62,7 @@
 
       <!-- Top Brand Header -->
       <div class="relative z-10 flex items-center justify-between">
-        <a href="/?demo=1" class="flex items-center space-x-3 group">
+        <a href="/" class="flex items-center space-x-3 group">
           <div class="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 shadow-lg shadow-teal-950/50 group-hover:bg-teal-500/30 transition">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -78,7 +78,7 @@
 
         <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300 bg-emerald-950/80 border border-emerald-700/50 px-3 py-1 rounded-full">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Auth Service Online
+          Secure clinic workspace
         </span>
       </div>
 
@@ -383,7 +383,8 @@
             </button>
           </form>
 
-          <!-- Divider: Quick Demo Sandbox -->
+          {% if demo_enabled %}
+          <!-- Local-only demo controls; never expose predictable demo credentials on deployments. -->
           <div class="relative my-6">
             <div class="absolute inset-0 flex items-center">
               <div class="w-full border-t border-slate-200"></div>
@@ -392,7 +393,6 @@
               <span class="bg-white px-3 text-slate-400 font-semibold">Or Instant Sandbox Preview</span>
             </div>
           </div>
-
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
               type="button"
@@ -419,6 +419,7 @@
               <span>Synthetic Mock Mode</span>
             </a>
           </div>
+          {% endif %}
 
         </div>
 
@@ -587,6 +588,7 @@
     // Format DRF error payloads cleanly
     function parseDrfErrors(data) {
       if (!data) return ['An unexpected error occurred.'];
+      if (data.error?.message) return [data.error.message];
       if (typeof data.detail === 'string') return [data.detail];
       const msgs = [];
       for (const [field, errors] of Object.entries(data)) {
@@ -618,6 +620,32 @@
       return { ok: res.ok, status: res.status, data };
     }
 
+    async function acceptPendingInvitation() {
+      const token = new URLSearchParams(window.location.hash.slice(1)).get('invite');
+      if (!token) return true;
+      const response = await fetch('/api/v1/invitations/accept/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken') || ''
+        },
+        body: JSON.stringify({token})
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        await fetch('/api/v1/auth/logout/', {
+          method: 'POST', credentials: 'same-origin',
+          headers: {'X-CSRFToken': getCookie('csrftoken') || ''}
+        }).catch(() => {});
+        showAlert('error', 'Invitation not accepted', result.error?.message || 'Sign in with the email address that received this invitation.');
+        return false;
+      }
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+      showAlert('success', 'Invitation accepted', `You joined ${result.organization_name}. Opening your clinic workspace…`);
+      return true;
+    }
+
     // Sign In Form Handler
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -639,6 +667,11 @@
       try {
         const result = await performLogin(email, password);
         if (result.ok) {
+          if (!(await acceptPendingInvitation())) {
+            btn.disabled = false;
+            btnText.textContent = 'Sign In to ClinicOS';
+            return;
+          }
           showAlert('success', 'Authenticated', 'Redirecting to ClinicOS Command Center...');
           window.location.href = '/';
         } else {
@@ -699,6 +732,11 @@
         btnText.textContent = 'Signing In...';
         const loginResult = await performLogin(email, password);
         if (loginResult.ok) {
+          if (!(await acceptPendingInvitation())) {
+            btn.disabled = false;
+            btnText.textContent = 'Create Clinician Account';
+            return;
+          }
           showAlert('success', 'Account Created & Signed In', 'Welcome to ClinicOS! Redirecting to dashboard...');
           window.location.href = '/';
         } else {
@@ -715,7 +753,8 @@
       }
     });
 
-    // 1-Click Live API Demo Clinician Login (creates or logs into demo@clinicos.org)
+    {% if demo_enabled %}
+    // Local-only 1-click demo account. This function is not rendered when DEBUG is false.
     async function oneClickDemoAccount() {
       hideAlert();
       const btn = document.getElementById('quickDemoBtn');
@@ -761,9 +800,16 @@
         btn.innerHTML = originalHtml;
       }
     }
+    {% endif %}
 
     // Initialize CSRF cookie on load
     ensureCsrfCookie();
+    if (new URLSearchParams(window.location.search).get('accept_invite') === '1') {
+      fetch('/api/v1/auth/me/', {credentials: 'same-origin'})
+        .then(response => response.ok ? acceptPendingInvitation() : false)
+        .then(accepted => { if (accepted) window.location.href = '/'; })
+        .catch(() => {});
+    }
   </script>
 </body>
 </html>
