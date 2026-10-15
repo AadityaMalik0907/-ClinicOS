@@ -1,25 +1,152 @@
-"""Development settings. Secrets and database credentials come from the environment."""
+"""Environment-driven settings for local development and hosted deployments."""
 
-import os
 import base64
 import hashlib
-from django.core.exceptions import ImproperlyConfigured
+import os
+import re
 from pathlib import Path
+from urllib.parse import parse_qsl, unquote, urlsplit
+
+from cryptography.fernet import Fernet
+from django.core.exceptions import ImproperlyConfigured
+from django.http.request import validate_host
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me")
-DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
-_field_key = os.environ.get("FIELD_ENCRYPTION_KEY")
+
+
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ImproperlyConfigured(f"{name} must be a boolean value.")
+
+
+def env_int(name, default, *, minimum=0):
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError:
+        raise ImproperlyConfigured(f"{name} must be an integer.") from None
+    if value < minimum:
+        raise ImproperlyConfigured(f"{name} must be at least {minimum}.")
+    return value
+
+
+def csv_values(value):
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def normalize_hostname(value):
+    """Validate one explicit hostname (never accept URL paths or ports)."""
+    hostname = value.strip().lower().rstrip(".")
+    domain = hostname[1:] if hostname.startswith(".") else hostname
+    if (
+        not domain
+        or "://" in hostname
+        or "/" in hostname
+        or "@" in hostname
+        or re.search(r"\s", hostname)
+        or not validate_host(domain, [domain])
+    ):
+        raise ImproperlyConfigured("Host settings must contain hostnames only, without schemes, paths, or ports.")
+    return hostname
+
+
+def normalize_origin(value, *, debug):
+    """Validate a complete trusted origin; HTTP is limited to local development."""
+    raw = value.strip().rstrip("/")
+    try:
+        parsed = urlsplit(raw)
+    except ValueError:
+        raise ImproperlyConfigured("CSRF trusted origins must be valid absolute origins.") from None
+    if (
+        parsed.scheme not in {"https", "http"}
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.path
+        or parsed.query
+        or parsed.fragment
+        or (parsed.scheme == "http" and (not debug or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}))
+    ):
+        raise ImproperlyConfigured("CSRF trusted origins must be complete HTTPS origins (or local HTTP origins in development).")
+    try:
+        parsed.port
+    except ValueError:
+        raise ImproperlyConfigured("CSRF trusted origin contains an invalid port.") from None
+    if parsed.hostname != "::1":
+        normalize_hostname(parsed.hostname)
+    return raw
+
+
+DEBUG = env_bool("DJANGO_DEBUG", False)
+if os.environ.get("VERCEL_ENV", "").strip().lower() == "production":
+    DEBUG = False
+EXPOSE_INVITATION_TOKENS = env_bool("DEVELOPMENT_INVITATION_TOKENS", DEBUG)
+if not DEBUG and EXPOSE_INVITATION_TOKENS:
+    raise ImproperlyConfigured("DEVELOPMENT_INVITATION_TOKENS cannot be enabled when DEBUG is false.")
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me" if DEBUG else "").strip()
+if not SECRET_KEY or SECRET_KEY == "dev-only-change-me":
+    if not DEBUG:
+        raise ImproperlyConfigured("Set a unique DJANGO_SECRET_KEY for deployments with DEBUG disabled.")
+
+_field_key = os.environ.get("FIELD_ENCRYPTION_KEY", "").strip()
 if not _field_key:
     if not DEBUG:
         raise ImproperlyConfigured("FIELD_ENCRYPTION_KEY is required when DEBUG is false.")
     _field_key = base64.urlsafe_b64encode(hashlib.sha256(SECRET_KEY.encode("utf-8")).digest()).decode("ascii")
 FIELD_ENCRYPTION_KEY = _field_key
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
-if "testserver" not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append("testserver")
+try:
+    Fernet(FIELD_ENCRYPTION_KEY.encode("ascii"))
+except (ValueError, UnicodeEncodeError):
+    raise ImproperlyConfigured("FIELD_ENCRYPTION_KEY must be a valid Fernet key.") from None
+
+VERCEL_HOSTNAME = "clinic-os-flax.vercel.app"
+_host_values = [VERCEL_HOSTNAME]
+_host_values.extend(csv_values(os.environ.get("DJANGO_ALLOWED_HOSTS", "")))
+for _vercel_key in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+    _vercel_host = os.environ.get(_vercel_key, "").strip()
+    if _vercel_host:
+        _host_values.append(_vercel_host)
+if DEBUG:
+    _host_values.extend(("localhost", "127.0.0.1"))
+ALLOWED_HOSTS = list(dict.fromkeys(normalize_hostname(host) for host in _host_values))
+ALLOWED_HOSTS.append("testserver")
+
+SITE_URL = os.environ.get("SITE_URL", "").strip().rstrip("/")
+_origin_values = csv_values(os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", ""))
+if SITE_URL:
+    _origin_values.append(SITE_URL)
+_origin_values.append(f"https://{VERCEL_HOSTNAME}")
+for _vercel_key in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+    _vercel_host = os.environ.get(_vercel_key, "").strip()
+    if _vercel_host:
+        _origin_values.append(f"https://{_vercel_host}")
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(
+    normalize_origin(origin, debug=DEBUG) for origin in _origin_values
+))
+
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
+SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", not DEBUG)
+SECURE_HSTS_SECONDS = env_int("DJANGO_SECURE_HSTS_SECONDS", "86400" if not DEBUG else "0")
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", False)
+SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+if env_bool("DJANGO_TRUST_PROXY_SSL", not DEBUG):
+    # Vercel terminates HTTPS and sets this header on requests to the function.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -60,7 +187,34 @@ TEMPLATES = [{
 }]
 WSGI_APPLICATION = "config.wsgi.application"
 
-if os.environ.get("DB_ENGINE", "sqlite").lower() == "postgres":
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+_connection_age = env_int("DB_CONN_MAX_AGE", 0)
+if DATABASE_URL:
+    try:
+        parsed_database_url = urlsplit(DATABASE_URL)
+    except ValueError:
+        raise ImproperlyConfigured("DATABASE_URL is not a valid PostgreSQL URL.") from None
+    if parsed_database_url.scheme not in {"postgres", "postgresql", "postgresql+psycopg"}:
+        raise ImproperlyConfigured("DATABASE_URL must use PostgreSQL.")
+    try:
+        _database_hostname = parsed_database_url.hostname
+        _database_port = parsed_database_url.port
+    except ValueError:
+        raise ImproperlyConfigured("DATABASE_URL contains an invalid host or port.") from None
+    if not _database_hostname or not parsed_database_url.path.strip("/"):
+        raise ImproperlyConfigured("DATABASE_URL must include a PostgreSQL host and database name.")
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(parsed_database_url.path.lstrip("/")),
+        "USER": unquote(parsed_database_url.username or ""),
+        "PASSWORD": unquote(parsed_database_url.password or ""),
+        "HOST": _database_hostname,
+        "PORT": str(_database_port or 5432),
+        "CONN_MAX_AGE": _connection_age,
+        "CONN_HEALTH_CHECKS": True,
+        "OPTIONS": dict(parse_qsl(parsed_database_url.query)),
+    }}
+elif DEBUG and os.environ.get("DB_ENGINE", "sqlite").lower() == "postgres":
     DATABASES = {"default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ.get("POSTGRES_DB", "clinicos"),
@@ -68,9 +222,12 @@ if os.environ.get("DB_ENGINE", "sqlite").lower() == "postgres":
         "PASSWORD": os.environ.get("POSTGRES_APP_PASSWORD", os.environ.get("POSTGRES_PASSWORD", "clinicos-dev")),
         "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 0,
     }}
-else:
+elif DEBUG:
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+else:
+    raise ImproperlyConfigured("Set DATABASE_URL to a persistent PostgreSQL database for production.")
 
 AUTH_USER_MODEL = "accounts.User"
 AUTH_PASSWORD_VALIDATORS = [
@@ -83,5 +240,6 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

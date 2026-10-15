@@ -38,6 +38,34 @@ The default database password and Django secret are for local development only. 
 
 For PostgreSQL Compose, the database bootstrap account creates a separate `clinicos_app` role with `NOSUPERUSER` and `NOBYPASSRLS`; the web service connects with that role. Keep the bootstrap credentials for database administration and use a separate application password in deployed environments.
 
+## Deploy to Vercel
+
+Vercel currently detects this Django project from `manage.py` and `config.wsgi`; this repository has no separate JavaScript frontend, `vercel.json`, or custom serverless wrapper. Keep Vercel's Django framework detection enabled and leave the Build Command at its detected default. The HTML frontend is rendered by Django templates. The project writes no application data to the deployment filesystem.
+
+The production settings require PostgreSQL and fail at startup if `DATABASE_URL`, `DJANGO_SECRET_KEY`, or `FIELD_ENCRYPTION_KEY` is missing. SQLite is for local development only. In Vercel Project Settings, add these variables to **Production**:
+
+| Variable | Value |
+| --- | --- |
+| `DJANGO_DEBUG` | `false` |
+| `DJANGO_SECRET_KEY` | A unique, randomly generated Django secret |
+| `FIELD_ENCRYPTION_KEY` | A Fernet key generated once and backed up securely |
+| `DATABASE_URL` | The PostgreSQL connection URL from a persistent database provider |
+| `DJANGO_ALLOWED_HOSTS` | `clinic-os-flax.vercel.app` (additional exact hostnames may be comma-separated) |
+| `SITE_URL` | `https://clinic-os-flax.vercel.app` |
+| `DB_CONN_MAX_AGE` | `0` |
+
+The canonical Vercel domain is already allowed. Vercel's `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` values are also added as exact hosts and HTTPS CSRF origins, so preview URLs do not require a wildcard. If using a custom domain, add its exact hostname to `DJANGO_ALLOWED_HOSTS` and set `SITE_URL` to its HTTPS origin. Never use `ALLOWED_HOSTS = ["*"]` or trust all `vercel.app` subdomains.
+
+Provision PostgreSQL before deploying. Use a persistent database and a dedicated application role that is not a superuser and does not have `BYPASSRLS`; the role needs permission to create and own the application tables for migrations. Set the same required secrets for **Preview** only when preview deployments have their own suitable database. Do not point previews at production data. `Development` variables are not needed when running locally with `.env`.
+
+Run migrations against the configured database before using the deployment. Install and link the Vercel CLI for this checkout, then run:
+
+```powershell
+vercel env run -e production -- python manage.py migrate --noinput
+```
+
+Then push the code to the branch configured as Vercel's Production Branch and let Vercel deploy it. Verify `https://clinic-os-flax.vercel.app/health/ready/` returns `{"status":"ok"}`, `/` redirects to `/login/`, and registration/login work in a browser. The app server uses short-lived database connections by default (`DB_CONN_MAX_AGE=0`) for serverless execution. Migrations should be run again after schema changes, before the corresponding deployment receives traffic.
+
 ## Account API (backend)
 
 The backend supports many accounts: each registration creates a separate row in the custom `accounts.User` table, and each email address can belong to one account. Passwords are hashed by Django; they are never returned by the API. Registration currently creates an account only. Organization creation and invitations can be added separately.

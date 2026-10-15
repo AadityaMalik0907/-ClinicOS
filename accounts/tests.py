@@ -1,20 +1,66 @@
 from datetime import date
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import FieldError
+from django.conf import settings
+from django.core.exceptions import FieldError, ImproperlyConfigured
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TestCase, TransactionTestCase
+from django.test import Client, TestCase, TransactionTestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 from cryptography.fernet import Fernet
 
+from config.settings import csv_values, normalize_hostname
 from .fields import EncryptedFieldError
 from .audit import append_audit_event
 from .models import AuditEvent, Encounter, Membership, Organization, Patient
 
 
 User = get_user_model()
+
+
+class DeploymentSmokeTests(TestCase):
+    def test_vercel_host_is_allowed_and_trusted_for_csrf(self):
+        self.assertIn("clinic-os-flax.vercel.app", settings.ALLOWED_HOSTS)
+        self.assertIn("https://clinic-os-flax.vercel.app", settings.CSRF_TRUSTED_ORIGINS)
+
+    def test_explicit_environment_hostnames_are_parsed_and_validated(self):
+        self.assertEqual(csv_values(" host-one.example, , host-two.example "), [
+            "host-one.example", "host-two.example",
+        ])
+        self.assertEqual(normalize_hostname(" EXTRA.example. "), "extra.example")
+        with self.assertRaises(ImproperlyConfigured):
+            normalize_hostname("https://example.com/path")
+
+    def test_root_redirects_to_login_and_login_page_renders(self):
+        response = self.client.get("/")
+        self.assertRedirects(response, "/login/")
+        self.assertEqual(self.client.get("/login/").status_code, 200)
+
+    def test_health_endpoint_checks_database(self):
+        response = self.client.get("/health/ready/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_session_auth_api_keeps_csrf_protection_enabled(self):
+        client = Client(enforce_csrf_checks=True)
+        csrf_response = client.get("/api/v1/auth/csrf/")
+        csrf_token = csrf_response.cookies["csrftoken"].value
+        payload = {
+            "email": "csrf-check@example.com",
+            "password": "SafePassword!2026",
+            "first_name": "CSRF",
+            "last_name": "Check",
+        }
+
+        denied = client.post("/api/v1/auth/register/", payload, content_type="application/json")
+        self.assertEqual(denied.status_code, 403)
+        allowed = client.post(
+            "/api/v1/auth/register/", payload,
+            content_type="application/json", HTTP_X_CSRFTOKEN=csrf_token,
+            HTTP_ORIGIN="https://clinic-os-flax.vercel.app",
+        )
+        self.assertEqual(allowed.status_code, 201)
 
 
 class EncryptedClinicalFieldTests(TestCase):
