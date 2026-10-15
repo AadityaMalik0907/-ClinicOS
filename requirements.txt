@@ -3,3 +3,5 @@ djangorestframework>=3.16,<3.17
 psycopg[binary]>=3.2,<4
 python-dotenv>=1.0,<2
 cryptography>=44,<48
+gunicorn>=23,<24; sys_platform != "win32"
+whitenoise>=6.9,<7

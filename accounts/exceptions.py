@@ -15,14 +15,16 @@ def api_exception_handler(exc, context):
         message = "Request validation failed."
         fields = data
 
-    error = {"code": _error_code(response.status_code), "message": message}
+    error = {"code": _error_code(response.status_code, exc), "message": message}
     if fields is not None:
         error["fields"] = fields
     response.data = {"error": error}
     return response
 
 
-def _error_code(status_code):
+def _error_code(status_code, exc=None):
+    if getattr(exc, "default_code", None) == "plan_limit_exceeded":
+        return "plan_limit_exceeded"
     return {
         400: "validation_error",
         401: "authentication_required",
@@ -30,4 +32,5 @@ def _error_code(status_code):
         404: "not_found",
         405: "method_not_allowed",
         429: "rate_limited",
+        503: "service_unavailable",
     }.get(status_code, "api_error")

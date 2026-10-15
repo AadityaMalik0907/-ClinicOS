@@ -278,3 +278,21 @@ class AuditEvent(models.Model):
 
     def delete(self, *args, **kwargs):
         raise TypeError("Audit events are append-only.")
+
+
+class UsageEvent(models.Model):
+    class Metric(models.TextChoices):
+        PATIENT_CREATED = "patient.created", "Patient created"
+        ENCOUNTER_CREATED = "encounter.created", "Encounter created"
+
+    organization_id = models.PositiveBigIntegerField()
+    actor_user_id = models.PositiveBigIntegerField(null=True, blank=True)
+    metric = models.CharField(max_length=32, choices=Metric.choices)
+    quantity = models.PositiveIntegerField(default=1)
+    occurred_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ("organization_id", "occurred_at", "id")
+        indexes = [
+            models.Index(fields=("organization_id", "metric", "occurred_at"), name="usage_org_metric_date_idx"),
+        ]
