@@ -26,9 +26,25 @@ User = get_user_model()
 
 
 class DeploymentSmokeTests(TestCase):
-    def test_vercel_host_is_allowed_and_trusted_for_csrf(self):
-        self.assertIn("clinic-os-flax.vercel.app", settings.ALLOWED_HOSTS)
-        self.assertIn("https://clinic-os-flax.vercel.app", settings.CSRF_TRUSTED_ORIGINS)
+    def test_production_and_deployment_hosts_are_allowed_and_trusted_for_csrf(self):
+        production_host = "clinicos-production.vercel.app"
+        deployment_host = "clinicos-preview-abc123.vercel.app"
+        with self.settings(
+            ALLOWED_HOSTS=["localhost", "127.0.0.1", "testserver", production_host, deployment_host],
+            CSRF_TRUSTED_ORIGINS=[f"https://{production_host}", f"https://{deployment_host}"],
+        ):
+            self.assertIn(production_host, settings.ALLOWED_HOSTS)
+            self.assertIn(deployment_host, settings.ALLOWED_HOSTS)
+            self.assertIn(f"https://{production_host}", settings.CSRF_TRUSTED_ORIGINS)
+            self.assertIn(f"https://{deployment_host}", settings.CSRF_TRUSTED_ORIGINS)
+            self.assertEqual(self.client.get("/", HTTP_HOST=production_host).status_code, 302)
+            self.assertEqual(self.client.get("/", HTTP_HOST=deployment_host).status_code, 302)
+
+    def test_unknown_host_is_rejected_and_local_hosts_work(self):
+        with self.settings(ALLOWED_HOSTS=["localhost", "127.0.0.1", "testserver"]):
+            self.assertEqual(self.client.get("/", HTTP_HOST="localhost").status_code, 302)
+            self.assertEqual(self.client.get("/", HTTP_HOST="127.0.0.1").status_code, 302)
+            self.assertEqual(self.client.get("/", HTTP_HOST="unknown.vercel.app").status_code, 400)
 
     def test_explicit_environment_hostnames_are_parsed_and_validated(self):
         self.assertEqual(csv_values(" host-one.example, , host-two.example "), [
@@ -37,6 +53,10 @@ class DeploymentSmokeTests(TestCase):
         self.assertEqual(normalize_hostname(" EXTRA.example. "), "extra.example")
         with self.assertRaises(ImproperlyConfigured):
             normalize_hostname("https://example.com/path")
+        with self.assertRaises(ImproperlyConfigured):
+            normalize_hostname(".vercel.app")
+        with self.assertRaises(ImproperlyConfigured):
+            normalize_hostname("*.vercel.app")
 
     def test_root_redirects_to_login_and_login_page_renders(self):
         response = self.client.get("/")
@@ -61,11 +81,18 @@ class DeploymentSmokeTests(TestCase):
 
         denied = client.post("/api/v1/auth/register/", payload, content_type="application/json")
         self.assertEqual(denied.status_code, 403)
-        allowed = client.post(
-            "/api/v1/auth/register/", payload,
-            content_type="application/json", HTTP_X_CSRFTOKEN=csrf_token,
-            HTTP_ORIGIN="https://clinic-os-flax.vercel.app",
-        )
+        with self.settings(CSRF_TRUSTED_ORIGINS=["https://clinicos-production.vercel.app"]):
+            untrusted_origin = client.post(
+                "/api/v1/auth/register/", payload,
+                content_type="application/json", HTTP_X_CSRFTOKEN=csrf_token,
+                HTTP_ORIGIN="https://unknown.vercel.app",
+            )
+            self.assertEqual(untrusted_origin.status_code, 403)
+            allowed = client.post(
+                "/api/v1/auth/register/", payload,
+                content_type="application/json", HTTP_X_CSRFTOKEN=csrf_token,
+                HTTP_ORIGIN="https://clinicos-production.vercel.app",
+            )
         self.assertEqual(allowed.status_code, 201)
 
 

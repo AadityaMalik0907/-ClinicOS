@@ -45,14 +45,15 @@ def csv_values(value):
 def normalize_hostname(value):
     """Validate one explicit hostname (not a URL, path, or host:port)."""
     hostname = value.strip().lower().rstrip(".")
-    domain = hostname[1:] if hostname.startswith(".") else hostname
     if (
-        not domain
+        not hostname
+        or hostname.startswith(".")
+        or "*" in hostname
         or "://" in hostname
         or "/" in hostname
         or "@" in hostname
         or re.search(r"\s", hostname)
-        or not validate_host(domain, [domain])
+        or not validate_host(hostname, [hostname])
     ):
         raise ImproperlyConfigured("Host settings must contain hostnames only, without schemes, paths, or ports.")
     return hostname
@@ -110,31 +111,29 @@ try:
 except (ValueError, UnicodeEncodeError):
     raise ImproperlyConfigured("FIELD_ENCRYPTION_KEY must be a valid Fernet key.") from None
 
-VERCEL_HOSTNAME = "clinic-os-flax.vercel.app"
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver", VERCEL_HOSTNAME]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 ALLOWED_HOSTS.extend(csv_values(os.environ.get("DJANGO_ALLOWED_HOSTS", "")))
+# VERCEL_URL is the current deployment (often a preview); the project
+# production URL is the stable production hostname. Treat both as exact hosts.
+_vercel_hostnames = []
 for _vercel_key in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
-    _vercel_host = os.environ.get(_vercel_key, "").strip()
-    if _vercel_host:
-        ALLOWED_HOSTS.append(_vercel_host)
+    _vercel_value = os.environ.get(_vercel_key, "").strip()
+    if _vercel_value:
+        _vercel_hostnames.append(normalize_hostname(_vercel_value))
+ALLOWED_HOSTS.extend(_vercel_hostnames)
 render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if render_hostname:
     ALLOWED_HOSTS.append(render_hostname)
 ALLOWED_HOSTS = list(dict.fromkeys(normalize_hostname(host) for host in ALLOWED_HOSTS))
 
 SITE_URL = os.environ.get("SITE_URL", "").strip().rstrip("/")
-CSRF_TRUSTED_ORIGINS = [
-    "https://clinic-os-flax.vercel.app",
-]
+CSRF_TRUSTED_ORIGINS = []
 _origin_values = csv_values(os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", ""))
 if SITE_URL:
     _origin_values.append(SITE_URL)
-for _vercel_key in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
-    _vercel_host = os.environ.get(_vercel_key, "").strip()
-    if _vercel_host:
-        _origin_values.append(f"https://{_vercel_host}")
+_origin_values.extend(f"https://{host}" for host in _vercel_hostnames)
 if render_hostname:
-    _origin_values.append(f"https://{render_hostname}")
+    _origin_values.append(f"https://{normalize_hostname(render_hostname)}")
 CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(
     normalize_origin(origin, debug=DEBUG)
     for origin in [*CSRF_TRUSTED_ORIGINS, *_origin_values]

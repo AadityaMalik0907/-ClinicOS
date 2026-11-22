@@ -50,11 +50,11 @@ The production settings require PostgreSQL and fail at startup if `DATABASE_URL`
 | `DJANGO_SECRET_KEY` | A unique, randomly generated Django secret |
 | `FIELD_ENCRYPTION_KEY` | A Fernet key generated once and backed up securely |
 | `DATABASE_URL` | The PostgreSQL connection URL from a persistent database provider |
-| `DJANGO_ALLOWED_HOSTS` | `clinic-os-flax.vercel.app` (additional exact hostnames may be comma-separated) |
-| `SITE_URL` | `https://clinic-os-flax.vercel.app` |
+| `DJANGO_ALLOWED_HOSTS` | Optional comma-separated custom production or preview hostnames |
+| `SITE_URL` | The public HTTPS URL for the deployment |
 | `DB_CONN_MAX_AGE` | `0` |
 
-The canonical Vercel domain is already allowed. Vercel's `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` values are also added as exact hosts and HTTPS CSRF origins, so preview URLs do not require a wildcard. If using a custom domain, add its exact hostname to `DJANGO_ALLOWED_HOSTS` and set `SITE_URL` to its HTTPS origin. Never use `ALLOWED_HOSTS = ["*"]` or trust all `vercel.app` subdomains.
+Vercel's `VERCEL_URL` (the current deployment) and `VERCEL_PROJECT_PRODUCTION_URL` (the project production domain) are read as exact hosts and added as HTTPS CSRF origins. Add any custom domain or preview hostname to `DJANGO_ALLOWED_HOSTS` and set `SITE_URL` to its HTTPS origin. Never use `ALLOWED_HOSTS = ["*"]` or trust all `vercel.app` subdomains.
 
 Provision PostgreSQL before deploying. Use a persistent database and a dedicated application role that is not a superuser and does not have `BYPASSRLS`; the role needs permission to create and own the application tables for migrations. Set the same required secrets for **Preview** only when preview deployments have their own suitable database. Do not point previews at production data. `Development` variables are not needed when running locally with `.env`.
 
@@ -64,7 +64,7 @@ Run migrations against the configured database before using the deployment. Inst
 vercel env run -e production -- python manage.py migrate --noinput
 ```
 
-Then push the code to the branch configured as Vercel's Production Branch and let Vercel deploy it. Verify `https://clinic-os-flax.vercel.app/health/ready/` returns `{"status":"ok"}`, `/` redirects to `/login/`, and registration/login work in a browser. The app server uses short-lived database connections by default (`DB_CONN_MAX_AGE=0`) for serverless execution. Migrations should be run again after schema changes, before the corresponding deployment receives traffic.
+Then push the code to the branch configured as Vercel's Production Branch and let Vercel deploy it. Verify the deployment's `/health/ready/` endpoint returns `{"status":"ok"}`, `/` redirects to `/login/`, and registration/login work in a browser. The app server uses short-lived database connections by default (`DB_CONN_MAX_AGE=0`) for serverless execution. Migrations should be run again after schema changes, before the corresponding deployment receives traffic.
 
 ## Account API (backend)
 
