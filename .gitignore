@@ -8,3 +8,8 @@ venv/
 .coverage
 htmlcov/
 staticfiles/
+
+.vercel
+.env*
+.neon
+node_modules/

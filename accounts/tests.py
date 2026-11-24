@@ -6,7 +6,8 @@ from django.core import mail
 from django.core.exceptions import FieldError
 from django.conf import settings
 from django.core.exceptions import FieldError, ImproperlyConfigured
-from django.db import connection
+from django.core.management.base import CommandError
+from django.db import connection, OperationalError
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TestCase, TransactionTestCase, override_settings
 from django.core.cache import cache
@@ -16,6 +17,7 @@ from rest_framework.test import APITestCase
 from cryptography.fernet import Fernet
 
 from config.settings import csv_values, normalize_hostname
+from scripts.vercel_release import ensure_cache_table
 from .fields import EncryptedFieldError
 from .audit import append_audit_event
 from .models import AuditEvent, Encounter, Membership, Organization, Patient, UsageEvent
@@ -94,6 +96,53 @@ class DeploymentSmokeTests(TestCase):
                 HTTP_ORIGIN="https://clinicos-production.vercel.app",
             )
         self.assertEqual(allowed.status_code, 201)
+
+
+class VercelReleaseCacheTableTests(TestCase):
+    database_cache = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "clinicos_cache",
+            "TIMEOUT": 300,
+        },
+    }
+
+    @patch("scripts.vercel_release.call_command")
+    @patch("scripts.vercel_release.connection.introspection.table_names", return_value=["clinicos_cache"])
+    @patch("scripts.vercel_release.connection.ensure_connection")
+    def test_existing_cache_table_is_left_unchanged(self, ensure_connection, table_names, call_command_mock):
+        with self.settings(CACHES=self.database_cache):
+            self.assertFalse(ensure_cache_table())
+        ensure_connection.assert_called_once_with()
+        call_command_mock.assert_not_called()
+
+    @patch("scripts.vercel_release.call_command")
+    @patch("scripts.vercel_release.connection.introspection.table_names", return_value=[])
+    @patch("scripts.vercel_release.connection.ensure_connection")
+    def test_missing_cache_table_is_created(self, ensure_connection, table_names, call_command_mock):
+        with self.settings(CACHES=self.database_cache):
+            self.assertTrue(ensure_cache_table())
+        call_command_mock.assert_called_once_with("createcachetable", "clinicos_cache", verbosity=0)
+
+    @patch("scripts.vercel_release.connection.ensure_connection", side_effect=OperationalError("database offline"))
+    def test_database_connection_failure_has_clear_error(self, ensure_connection):
+        with self.settings(CACHES=self.database_cache):
+            with self.assertRaisesMessage(CommandError, "Could not connect to the configured database"):
+                ensure_cache_table()
+
+    @patch("scripts.vercel_release.call_command")
+    @patch("scripts.vercel_release.connection.introspection.table_names", return_value=[])
+    @patch("scripts.vercel_release.connection.ensure_connection")
+    def test_custom_cache_table_name_is_used(self, ensure_connection, table_names, call_command_mock):
+        custom_cache = {
+            "default": {
+                **self.database_cache["default"],
+                "LOCATION": "custom_clinicos_cache",
+            },
+        }
+        with self.settings(CACHES=custom_cache):
+            self.assertTrue(ensure_cache_table())
+        call_command_mock.assert_called_once_with("createcachetable", "custom_clinicos_cache", verbosity=0)
 
 
 class EncryptedClinicalFieldTests(TestCase):

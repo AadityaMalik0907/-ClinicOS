@@ -13,7 +13,10 @@ from django.http.request import validate_host
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+_env_file = BASE_DIR / ".env"
+if not _env_file.exists():
+    _env_file = BASE_DIR / ".env.local"
+load_dotenv(_env_file)
 
 
 def env_bool(name, default=False):

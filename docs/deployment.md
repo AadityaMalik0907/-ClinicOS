@@ -40,6 +40,22 @@ After the first staging deploy:
 
 ## Vercel and production data
 
-Vercel supports Django through Python Functions, but a Vercel deployment still needs a persistent PostgreSQL provider, the same secrets and trusted-origin configuration, a shared cache backend, and a reliable release step for migrations/cache-table creation. Use Vercel's Django guide for platform-specific entrypoint and release setup.
+Vercel supports Django through Python Functions, but a deployment still needs a persistent PostgreSQL provider, the same secrets and trusted-origin configuration, a shared cache backend, and a release step. The default production cache uses Django's `DatabaseCache` backend and the table name configured by `DJANGO_CACHE_TABLE` (default: `clinicos_cache`).
+
+After the production PostgreSQL database is configured and the application's normal migrations have been applied, run the cache-table release check from the project root. It checks database connectivity and creates only the configured cache table when that table is missing. It does not run migrations or alter existing application tables. Do not run it with `DJANGO_DEBUG=true`, because debug mode uses the local-memory cache backend.
+
+For a local deployment-like environment, load the production database settings and secrets into the environment, set `DJANGO_DEBUG=false`, then run:
+
+```powershell
+python scripts/vercel_release.py
+```
+
+To run the same check with the Vercel Production environment variables:
+
+```powershell
+vercel env run -e production -- python scripts/vercel_release.py
+```
+
+The command exits with a non-zero status and a clear error if it cannot connect to PostgreSQL or create the cache table. It is safe to repeat for deploys where the table already exists. Use Vercel's Django guide for platform-specific entrypoint and release setup; configure this script as a release step that runs before production traffic is served.
 
 This learning project is not a certified or audited healthcare service. Keep staging data synthetic. Before handling real patient information, complete the applicable privacy, security, contractual, incident-response, access-review, backup, and disaster-recovery work with qualified reviewers.
